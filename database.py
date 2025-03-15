@@ -1,4 +1,3 @@
-
 import sqlite3
 import os
 from flask import g
@@ -33,18 +32,7 @@ def init_db():
             longitude REAL NOT NULL,
             image TEXT NOT NULL,
             status TEXT NOT NULL,
-            timestamp TEXT NOT NULL,
-            department TEXT,
-            assigned_to TEXT,
-            assigned_to_name TEXT,
-            assigned_time TEXT,
-            resolved_image TEXT,
-            resolved_photo_timestamp TEXT,
-            resolved_by TEXT,
-            resolved_by_name TEXT,
-            status_updated TEXT,
-            status_updated_by TEXT,
-            status_note TEXT
+            timestamp TEXT NOT NULL
         )
         ''')
         conn.commit()
