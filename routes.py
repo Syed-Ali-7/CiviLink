@@ -352,12 +352,20 @@ def report_issue():
         ward = request.form.get('ward')
         image_data = request.files.get('image')
         
+        # Get latitude and longitude from form
+        latitude = request.form.get('latitude')
+        longitude = request.form.get('longitude')
+        
         if not all([title, category, description, location, ward]):
             flash('Please fill all required fields', 'danger')
             return render_template('report_issue.html')
         
         if not image_data:
             flash('Please upload an image of the issue', 'danger')
+            return render_template('report_issue.html')
+            
+        if not latitude or not longitude:
+            flash('Please select a location on the map', 'danger')
             return render_template('report_issue.html')
         
         # Compress and encode the image
@@ -377,10 +385,13 @@ def report_issue():
             'description': description,
             'location': location,
             'ward': ward,
+            'latitude': float(latitude),
+            'longitude': float(longitude),
             'image': encoded_image,
             'status': 'not_resolved',
             'timestamp': datetime.now().isoformat(),
-            'reviews': []
+            'reviews': [],
+            'comments': []
         }
         
         storage.issues.append(new_issue)

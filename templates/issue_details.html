@@ -39,6 +39,13 @@
                             <p class="text-muted mb-2">
                                 <i class="fas fa-map-marker-alt me-2"></i> Location: {{ issue.location }}, {{ issue.ward }} Ward
                             </p>
+                            
+                            <!-- Map View (if coordinates available) -->
+                            {% if issue.latitude and issue.longitude %}
+                            <div class="mb-3 mt-3">
+                                <div id="issue-map" style="height: 250px; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);"></div>
+                            </div>
+                            {% endif %}
                         </div>
                     </div>
                 </div>
@@ -675,4 +682,82 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize Issue Location Map
+    const issueMapElement = document.getElementById('issue-map');
+    if (issueMapElement) {
+        {% if issue.latitude and issue.longitude %}
+        // Get coordinates from the issue
+        const issueCoords = [{{ issue.latitude }}, {{ issue.longitude }}];
+        
+        // Initialize the map centered on the issue location
+        const issueMap = L.map('issue-map').setView(issueCoords, 15);
+        
+        // Add OpenStreetMap tile layer
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+            maxZoom: 19
+        }).addTo(issueMap);
+        
+        // Add a marker for the issue location
+        const marker = L.marker(issueCoords).addTo(issueMap);
+        
+        // Add a popup with issue details
+        marker.bindPopup(`
+            <strong>{{ issue.title }}</strong><br>
+            {{ issue.category }}<br>
+            <small class="text-muted">Reported: {{ issue.formatted_time }}</small>
+        `).openPopup();
+        {% endif %}
+    }
+    
+    // Toggle resolved photo upload section based on status selection
+    const statusRadios = document.querySelectorAll('.status-radio');
+    const resolvedPhotoSection = document.getElementById('resolvedPhotoSection');
+    const resolvedPhotoInput = document.getElementById('resolvedPhoto');
+    
+    if (statusRadios && resolvedPhotoSection) {
+        statusRadios.forEach(radio => {
+            radio.addEventListener('change', function() {
+                if (this.value === 'resolved') {
+                    resolvedPhotoSection.style.display = 'block';
+                    resolvedPhotoInput.disabled = false;
+                } else {
+                    resolvedPhotoSection.style.display = 'none';
+                    resolvedPhotoInput.disabled = true;
+                }
+            });
+        });
+    }
+    
+    // Preview uploaded images
+    if (resolvedPhotoInput) {
+        const resolvedPhotoPreviewContainer = document.getElementById('resolvedPhotoPreviewContainer');
+        const resolvedPhotoPreview = document.getElementById('resolvedPhotoPreview');
+        
+        if (resolvedPhotoPreview) {
+            resolvedPhotoInput.addEventListener('change', function() {
+                if (this.files && this.files[0]) {
+                    const reader = new FileReader();
+                    
+                    reader.onload = function(e) {
+                        if (resolvedPhotoPreviewContainer) {
+                            resolvedPhotoPreviewContainer.style.display = 'block';
+                        }
+                        
+                        resolvedPhotoPreview.style.display = 'block';
+                        resolvedPhotoPreview.innerHTML = `<img src="${e.target.result}" class="img-fluid rounded mt-2" alt="Selected image" style="max-height: 200px;">`;
+                    };
+                    
+                    reader.readAsDataURL(this.files[0]);
+                }
+            });
+        }
+    }
+});
+</script>
 {% endblock %}
