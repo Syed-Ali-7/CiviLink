@@ -174,6 +174,13 @@
                                 </div>
                             </div>
                             
+                            <!-- Status Update Note -->
+                            <div class="mb-3">
+                                <label for="statusNote" class="form-label">Status Update Note</label>
+                                <textarea class="form-control" id="statusNote" name="status_note" rows="3" placeholder="Add a note explaining the status update...">{{ issue.status_note }}</textarea>
+                                <div class="form-text">Please provide additional details about this status update.</div>
+                            </div>
+                            
                             <button type="submit" class="btn btn-primary mt-3">
                                 <i class="fas fa-sync-alt me-2"></i> Update Status
                             </button>
@@ -291,6 +298,13 @@
                                 Resolved (BBMP Officers only)
                             </label>
                         </div>
+                    </div>
+                    
+                    <!-- Status Update Note -->
+                    <div class="mb-3">
+                        <label for="citizenStatusNote" class="form-label">Status Update Note</label>
+                        <textarea class="form-control" id="citizenStatusNote" name="status_note" rows="3" placeholder="Add a note explaining the status update...">{{ issue.status_note }}</textarea>
+                        <div class="form-text">Please provide additional details about this status update.</div>
                     </div>
                     
                     <button type="submit" class="btn btn-primary mt-3">
