@@ -144,12 +144,14 @@ storage = Storage()
 # Import routes
 from routes import *
 
-
-    @property
-    def issues(self):
+    def get_issues(self):
         conn = get_db()
         cursor = conn.cursor()
         issues = cursor.execute('SELECT * FROM issues').fetchall()
         conn.close()
         return issues
+
+    @property
+    def issues(self):
+        return self.get_issues()
 
