@@ -21,7 +21,17 @@
                 <h3 class="card-title">
                     {{ current_user.name or 'User' }}
                     
-                    {% if current_user.stars > 0 %}
+                    {% if current_user.is_officer() %}
+                    <div class="mt-2">
+                        <span class="badge bg-primary rounded-pill fs-6">
+                            {% if current_user.is_admin() %}
+                            <i class="fas fa-user-shield me-1"></i> BBMP Admin
+                            {% else %}
+                            <i class="fas fa-user-tie me-1"></i> BBMP Officer
+                            {% endif %}
+                        </span>
+                    </div>
+                    {% elif current_user.stars > 0 %}
                     <div class="mt-2">
                         <span class="stars-display">
                             {% for i in range(current_user.stars) %}
@@ -40,6 +50,20 @@
                 <div class="text-muted mb-3">
                     <i class="fas fa-map-marker-alt me-2"></i> {{ current_user.ward }} Ward
                 </div>
+                {% endif %}
+                
+                {% if current_user.is_officer() %}
+                {% if current_user.employee_id %}
+                <div class="text-muted mb-3">
+                    <i class="fas fa-id-badge me-2"></i> ID: {{ current_user.employee_id }}
+                </div>
+                {% endif %}
+                
+                {% if current_user.department %}
+                <div class="text-muted mb-3">
+                    <i class="fas fa-building me-2"></i> {{ current_user.department }}
+                </div>
+                {% endif %}
                 {% endif %}
                 
                 <div class="stats-container mt-4">

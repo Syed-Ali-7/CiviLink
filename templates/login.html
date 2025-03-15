@@ -16,6 +16,7 @@
                 <form method="post" action="{{ url_for('login') }}">
                     <input type="hidden" name="action" value="verify_otp">
                     <input type="hidden" name="phone" value="{{ phone }}">
+                    <input type="hidden" name="user_type" value="{{ user_type }}">
                     
                     <div class="mb-3">
                         <label for="otp" class="form-label">Enter OTP sent to {{ phone }}</label>
@@ -25,6 +26,14 @@
                                    placeholder="Enter 6-digit OTP" maxlength="6" required>
                         </div>
                     </div>
+                    
+                    {% if user_type == 'officer' %}
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <strong>BBMP Officer Login:</strong> You are logging in as a BBMP officer. 
+                        Access is restricted to registered officer accounts only.
+                    </div>
+                    {% endif %}
                     
                     <div class="d-grid">
                         <button type="submit" class="btn btn-primary">
@@ -52,6 +61,32 @@
                                    placeholder="Enter your phone number" required>
                         </div>
                         <div class="form-text">We'll send a one-time password to this number.</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Login As</label>
+                        <div class="d-flex">
+                            <div class="form-check me-3">
+                                <input class="form-check-input" type="radio" name="user_type" id="userTypeCitizen" 
+                                       value="citizen" checked>
+                                <label class="form-check-label" for="userTypeCitizen">
+                                    <i class="fas fa-user me-1"></i> Citizen
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="user_type" id="userTypeOfficer" 
+                                       value="officer">
+                                <label class="form-check-label" for="userTypeOfficer">
+                                    <i class="fas fa-user-tie me-1"></i> BBMP Officer
+                                </label>
+                            </div>
+                        </div>
+                        <div class="form-text mt-1">
+                            <small class="text-muted">
+                                <i class="fas fa-info-circle me-1"></i> 
+                                BBMP officers must use their registered phone number.
+                            </small>
+                        </div>
                     </div>
                     
                     <div class="d-grid">

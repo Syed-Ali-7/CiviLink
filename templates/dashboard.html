@@ -4,15 +4,23 @@
 
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
-    <h1 class="mb-0"><i class="fas fa-tachometer-alt me-2"></i> Issues Dashboard</h1>
+    <h1 class="mb-0">
+        {% if is_officer %}
+        <i class="fas fa-user-tie me-2"></i> BBMP Officer Dashboard
+        {% else %}
+        <i class="fas fa-tachometer-alt me-2"></i> Issues Dashboard
+        {% endif %}
+    </h1>
+    {% if not is_officer %}
     <a href="{{ url_for('report_issue') }}" class="btn btn-primary">
         <i class="fas fa-plus me-2"></i> Report New Issue
     </a>
+    {% endif %}
 </div>
 
 <!-- Statistics Cards -->
 <div class="row g-4 mb-4">
-    <div class="col-md-3">
+    <div class="col-md-{% if is_officer %}2{% else %}3{% endif %}">
         <div class="card border-0 shadow-sm h-100">
             <div class="card-body text-center">
                 <div class="display-4 text-primary mb-2">
@@ -23,7 +31,7 @@
             </div>
         </div>
     </div>
-    <div class="col-md-3">
+    <div class="col-md-{% if is_officer %}2{% else %}3{% endif %}">
         <div class="card border-0 shadow-sm h-100">
             <div class="card-body text-center">
                 <div class="display-4 text-danger mb-2">
@@ -34,7 +42,7 @@
             </div>
         </div>
     </div>
-    <div class="col-md-3">
+    <div class="col-md-{% if is_officer %}2{% else %}3{% endif %}">
         <div class="card border-0 shadow-sm h-100">
             <div class="card-body text-center">
                 <div class="display-4 text-warning mb-2">
@@ -45,7 +53,7 @@
             </div>
         </div>
     </div>
-    <div class="col-md-3">
+    <div class="col-md-{% if is_officer %}2{% else %}3{% endif %}">
         <div class="card border-0 shadow-sm h-100">
             <div class="card-body text-center">
                 <div class="display-4 text-success mb-2">
@@ -56,31 +64,98 @@
             </div>
         </div>
     </div>
+    
+    {% if is_officer %}
+    <!-- Officer-specific stats -->
+    <div class="col-md-2">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body text-center">
+                <div class="display-4 text-info mb-2">
+                    <i class="fas fa-user-check"></i>
+                </div>
+                <h5 class="card-title">Assigned</h5>
+                <p class="card-text display-6">{{ stats.assigned_to_me }}</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body text-center">
+                <div class="display-4 text-success mb-2">
+                    <i class="fas fa-trophy"></i>
+                </div>
+                <h5 class="card-title">Resolved by Me</h5>
+                <p class="card-text display-6">{{ stats.resolved_by_me }}</p>
+            </div>
+        </div>
+    </div>
+    {% endif %}
 </div>
 
 <!-- Filter Controls -->
 <div class="card border-0 shadow-sm mb-4">
     <div class="card-body">
-        <div class="row g-2 align-items-center">
-            <div class="col-md-6">
-                <h5 class="mb-0"><i class="fas fa-filter me-2"></i> Filter Issues</h5>
-            </div>
-            <div class="col-md-6">
-                <div class="d-flex gap-2 justify-content-md-end">
-                    <a href="{{ url_for('dashboard', status='all') }}" class="btn btn-sm {{ 'btn-primary' if current_filter == 'all' else 'btn-outline-primary' }}">
+        <div class="d-flex align-items-center justify-content-between mb-3">
+            <h5 class="mb-0">
+                <i class="fas fa-filter me-2"></i> Filter Issues
+            </h5>
+            {% if current_filter != 'all' or current_ward or current_department %}
+            <a href="{{ url_for('dashboard') }}" class="btn btn-sm btn-outline-secondary">
+                <i class="fas fa-times me-1"></i> Clear All Filters
+            </a>
+            {% endif %}
+        </div>
+        
+        <div class="row g-2">
+            <!-- Status filter -->
+            <div class="col-md-{% if is_officer %}4{% else %}12{% endif %}">
+                <div class="d-flex gap-2">
+                    <a href="{{ url_for('dashboard', status='all', ward=current_ward, department=current_department) }}" 
+                       class="btn btn-sm {{ 'btn-primary' if current_filter == 'all' else 'btn-outline-primary' }}">
                         All
                     </a>
-                    <a href="{{ url_for('dashboard', status='not_resolved') }}" class="btn btn-sm {{ 'btn-danger' if current_filter == 'not_resolved' else 'btn-outline-danger' }}">
+                    <a href="{{ url_for('dashboard', status='not_resolved', ward=current_ward, department=current_department) }}" 
+                       class="btn btn-sm {{ 'btn-danger' if current_filter == 'not_resolved' else 'btn-outline-danger' }}">
                         Not Resolved
                     </a>
-                    <a href="{{ url_for('dashboard', status='ongoing') }}" class="btn btn-sm {{ 'btn-warning' if current_filter == 'ongoing' else 'btn-outline-warning' }}">
+                    <a href="{{ url_for('dashboard', status='ongoing', ward=current_ward, department=current_department) }}" 
+                       class="btn btn-sm {{ 'btn-warning' if current_filter == 'ongoing' else 'btn-outline-warning' }}">
                         Ongoing
                     </a>
-                    <a href="{{ url_for('dashboard', status='resolved') }}" class="btn btn-sm {{ 'btn-success' if current_filter == 'resolved' else 'btn-outline-success' }}">
+                    <a href="{{ url_for('dashboard', status='resolved', ward=current_ward, department=current_department) }}" 
+                       class="btn btn-sm {{ 'btn-success' if current_filter == 'resolved' else 'btn-outline-success' }}">
                         Resolved
                     </a>
                 </div>
             </div>
+            
+            {% if is_officer %}
+            <!-- Ward filter (for officers) -->
+            <div class="col-md-4">
+                <div class="input-group">
+                    <span class="input-group-text"><i class="fas fa-map-marker-alt"></i></span>
+                    <select class="form-select" id="wardFilter" onchange="applyWardFilter(this.value)">
+                        <option value="">All Wards</option>
+                        {% for ward in wards %}
+                        <option value="{{ ward }}" {% if current_ward == ward %}selected{% endif %}>{{ ward }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            
+            <!-- Department filter (for officers) -->
+            <div class="col-md-4">
+                <div class="input-group">
+                    <span class="input-group-text"><i class="fas fa-building"></i></span>
+                    <select class="form-select" id="departmentFilter" onchange="applyDepartmentFilter(this.value)">
+                        <option value="">All Departments</option>
+                        {% for dept in departments %}
+                        <option value="{{ dept }}" {% if current_department == dept %}selected{% endif %}>{{ dept }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            {% endif %}
         </div>
     </div>
 </div>
@@ -102,14 +177,34 @@
                         Resolved
                     {% endif %}
                 </span>
+                
+                {% if is_officer and issue.assigned_to %}
+                <span class="badge bg-info status-badge" style="right: auto; left: 10px;">
+                    <i class="fas fa-user-check me-1"></i> Assigned
+                </span>
+                {% endif %}
             </div>
             <div class="card-body">
                 <h5 class="card-title">{{ issue.title }}</h5>
-                <p class="card-text text-muted mb-2">
-                    <span class="badge bg-secondary me-2">{{ issue.category }}</span>
-                    <i class="fas fa-map-marker-alt me-1"></i> {{ issue.location }}
+                <div class="mb-2">
+                    <span class="badge bg-secondary me-1">{{ issue.category }}</span>
+                    {% if issue.department %}
+                    <span class="badge bg-info me-1">{{ issue.department }}</span>
+                    {% endif %}
+                </div>
+                <p class="card-text small mb-1">
+                    <i class="fas fa-map-marker-alt me-1"></i> {{ issue.location }} ({{ issue.ward }})
                 </p>
                 <p class="card-text">{{ issue.description[:100] }}{% if issue.description|length > 100 %}...{% endif %}</p>
+                
+                {% if is_officer and issue.assigned_to %}
+                <p class="card-text small mb-0">
+                    <strong>Assigned to:</strong> {{ issue.assigned_to_name }}
+                    {% if issue.formatted_assigned_time %}
+                    <br><small class="text-muted">Assigned: {{ issue.formatted_assigned_time }}</small>
+                    {% endif %}
+                </p>
+                {% endif %}
             </div>
             <div class="card-footer bg-white">
                 <div class="d-flex justify-content-between align-items-center">
@@ -131,14 +226,44 @@
         <i class="fas fa-clipboard-list"></i>
     </div>
     <h3 class="text-muted">No issues found</h3>
-    {% if current_filter != 'all' %}
-    <p>No issues with the selected status. <a href="{{ url_for('dashboard') }}">View all issues</a>.</p>
-    {% else %}
+    {% if current_filter != 'all' or current_ward or current_department %}
+    <p>No issues match your filter criteria. <a href="{{ url_for('dashboard') }}">View all issues</a>.</p>
+    {% elif not is_officer %}
     <p>Start by reporting an issue in your ward.</p>
     <a href="{{ url_for('report_issue') }}" class="btn btn-primary mt-3">
         <i class="fas fa-plus me-2"></i> Report New Issue
     </a>
+    {% else %}
+    <p>No issues assigned to your department or ward yet.</p>
     {% endif %}
 </div>
 {% endif %}
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    function applyWardFilter(ward) {
+        const url = new URL(window.location.href);
+        
+        if (ward) {
+            url.searchParams.set('ward', ward);
+        } else {
+            url.searchParams.delete('ward');
+        }
+        
+        window.location.href = url.toString();
+    }
+    
+    function applyDepartmentFilter(department) {
+        const url = new URL(window.location.href);
+        
+        if (department) {
+            url.searchParams.set('department', department);
+        } else {
+            url.searchParams.delete('department');
+        }
+        
+        window.location.href = url.toString();
+    }
+</script>
 {% endblock %}
