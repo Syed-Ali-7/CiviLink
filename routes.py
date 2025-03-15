@@ -7,6 +7,7 @@ from flask import render_template, request, redirect, url_for, flash, jsonify, s
 from flask_login import login_user, logout_user, login_required, current_user
 from app import app, storage
 from models import User
+from database import get_db
 from utils import (
     generate_otp, is_valid_phone, normalize_phone, 
     compress_image, get_issue_status_color, 
