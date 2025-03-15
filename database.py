@@ -48,3 +48,10 @@ def get_db():
     conn = sqlite3.connect('issues.db')
     conn.row_factory = dict_factory
     return conn
+
+def get_issues():
+    conn = get_db()
+    cursor = conn.cursor()
+    issues = cursor.execute('SELECT * FROM issues ORDER BY timestamp DESC').fetchall()
+    conn.close()
+    return issues
