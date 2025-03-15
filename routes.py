@@ -395,23 +395,7 @@ def report_issue():
             'comments': []
         }
         
-        conn = get_db()
-        c = conn.cursor()
-        c.execute('''
-            INSERT INTO issues (
-                user_id, user_name, title, category, description, 
-                location, ward, latitude, longitude, image, 
-                status, timestamp
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        ''', (
-            current_user.id, current_user.name, title, category, description,
-            location, ward, float(latitude), float(longitude), encoded_image,
-            'not_resolved', datetime.now().isoformat()
-        ))
-        conn.commit()
-        conn.close()
-        
-        # Add issue to storage.issues list
+        # Create new issue directly in storage
         new_issue = {
             'id': issue_id,
             'user_id': current_user.id,
