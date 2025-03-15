@@ -74,6 +74,20 @@
                         </div>
                     </div>
                     
+                    <!-- Map Location Selection -->
+                    <div class="mb-4">
+                        <label class="form-label">Select Location on Map</label>
+                        <div id="bengaluru-map" style="height: 300px; border-radius: 10px;"></div>
+                        <div class="form-text">Click on the map to select the exact location of the issue.</div>
+                        <div class="mt-2" id="selectedLocation">
+                            <span class="text-muted">No location selected yet.</span>
+                        </div>
+                        
+                        <!-- Hidden fields to store latitude and longitude -->
+                        <input type="hidden" id="latitude" name="latitude" value="">
+                        <input type="hidden" id="longitude" name="longitude" value="">
+                    </div>
+                    
                     <div class="mb-4">
                         <label for="image" class="form-label">Upload Photo</label>
                         <div class="input-group">
@@ -120,6 +134,80 @@ document.addEventListener('DOMContentLoaded', function() {
             reader.readAsDataURL(this.files[0]);
         }
     });
+    
+    // Initialize Bengaluru map
+    // Bengaluru coordinates: 12.9716° N, 77.5946° E
+    const bengaluruCoords = [12.9716, 77.5946];
+    const map = L.map('bengaluru-map').setView(bengaluruCoords, 12);
+    
+    // Add OpenStreetMap tile layer
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+        maxZoom: 19
+    }).addTo(map);
+    
+    // Add a marker for Bengaluru center
+    let marker = L.marker(bengaluruCoords, { draggable: true }).addTo(map);
+    
+    // Update coordinates when marker is dragged
+    marker.on('dragend', function(event) {
+        updateSelectedLocation(marker.getLatLng());
+    });
+    
+    // Allow clicking on map to move the marker
+    map.on('click', function(e) {
+        marker.setLatLng(e.latlng);
+        updateSelectedLocation(e.latlng);
+    });
+    
+    // Function to update the selected location
+    function updateSelectedLocation(latlng) {
+        const lat = latlng.lat.toFixed(6);
+        const lng = latlng.lng.toFixed(6);
+        
+        // Update the hidden inputs
+        document.getElementById('latitude').value = lat;
+        document.getElementById('longitude').value = lng;
+        
+        // Update display text
+        document.getElementById('selectedLocation').innerHTML = 
+            `<strong>Selected Coordinates:</strong> ${lat}, ${lng} 
+            <span class="badge bg-success ms-2"><i class="fas fa-check"></i> Location Selected</span>`;
+        
+        // Reverse geocoding to get address (optional)
+        fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`)
+            .then(response => response.json())
+            .then(data => {
+                if (data && data.display_name) {
+                    // Set the location input with the reverse geocoded address
+                    const locationInput = document.getElementById('location');
+                    // Only set if user hasn't entered a location manually
+                    if (!locationInput.value || locationInput.value.trim() === '') {
+                        locationInput.value = data.display_name.split(',').slice(0, 3).join(', ');
+                    }
+                }
+            })
+            .catch(error => console.error('Error fetching address:', error));
+    }
+    
+    // Try to get user's location
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(function(position) {
+            const userLoc = [position.coords.latitude, position.coords.longitude];
+            
+            // Check if the user is near Bengaluru (within ~50km)
+            const distance = map.distance(userLoc, bengaluruCoords) / 1000; // in km
+            
+            if (distance < 50) {
+                // User is near Bengaluru, center map on user
+                map.setView(userLoc, 15);
+                marker.setLatLng(userLoc);
+                updateSelectedLocation(marker.getLatLng());
+            }
+        }, function(error) {
+            console.error('Error getting location:', error);
+        });
+    }
 });
 </script>
 {% endblock %}
