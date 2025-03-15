@@ -43,8 +43,45 @@
                     </div>
                 </div>
                 
-                <div class="issue-image mb-4">
-                    <img src="data:image/jpeg;base64,{{ issue.image }}" class="img-fluid rounded" alt="{{ issue.title }}">
+                <div class="issue-images mb-4">
+                    {% if issue.resolved_image %}
+                    <h5 class="mb-3 text-center">Before & After Comparison</h5>
+                    {% endif %}
+                    <div class="row">
+                        <div class="col-md-{% if issue.resolved_image %}6{% else %}12{% endif %} mb-3">
+                            <div class="card border-0 shadow-sm h-100">
+                                <div class="card-header bg-danger text-white">
+                                    <h6 class="mb-0"><i class="fas fa-exclamation-triangle me-2"></i> Original Issue</h6>
+                                </div>
+                                <div class="card-body">
+                                    <img src="data:image/jpeg;base64,{{ issue.image }}" class="img-fluid rounded" alt="{{ issue.title }}">
+                                </div>
+                                <div class="card-footer bg-white">
+                                    <small class="text-muted">
+                                        <i class="fas fa-calendar-alt me-1"></i> Reported: {{ issue.formatted_time }}
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        {% if issue.resolved_image %}
+                        <div class="col-md-6 mb-3">
+                            <div class="card border-0 shadow-sm h-100">
+                                <div class="card-header bg-success text-white">
+                                    <h6 class="mb-0"><i class="fas fa-check-circle me-2"></i> Resolved Issue</h6>
+                                </div>
+                                <div class="card-body">
+                                    <img src="data:image/jpeg;base64,{{ issue.resolved_image }}" class="img-fluid rounded" alt="Resolved {{ issue.title }}">
+                                </div>
+                                <div class="card-footer bg-white">
+                                    <small class="text-muted">
+                                        <i class="fas fa-calendar-alt me-1"></i> Resolved: {{ issue.formatted_resolved_time }}
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
                 </div>
                 
                 <div class="issue-description">
@@ -60,30 +97,52 @@
                 <h5 class="mb-0">Update Status</h5>
             </div>
             <div class="card-body">
-                <form method="post" action="{{ url_for('issue_details', issue_id=issue.id) }}">
+                <form method="post" action="{{ url_for('issue_details', issue_id=issue.id) }}" enctype="multipart/form-data" id="statusUpdateForm">
                     <input type="hidden" name="action" value="update_status">
                     
-                    <div class="d-flex gap-2">
+                    <div class="d-flex gap-2 mb-3">
                         <div class="form-check">
-                            <input class="form-check-input" type="radio" name="status" id="statusNotResolved" 
+                            <input class="form-check-input status-radio" type="radio" name="status" id="statusNotResolved" 
                                    value="not_resolved" {% if issue.status == 'not_resolved' %}checked{% endif %}>
                             <label class="form-check-label" for="statusNotResolved">
                                 Not Resolved
                             </label>
                         </div>
                         <div class="form-check">
-                            <input class="form-check-input" type="radio" name="status" id="statusOngoing" 
+                            <input class="form-check-input status-radio" type="radio" name="status" id="statusOngoing" 
                                    value="ongoing" {% if issue.status == 'ongoing' %}checked{% endif %}>
                             <label class="form-check-label" for="statusOngoing">
                                 Ongoing
                             </label>
                         </div>
                         <div class="form-check">
-                            <input class="form-check-input" type="radio" name="status" id="statusResolved" 
+                            <input class="form-check-input status-radio" type="radio" name="status" id="statusResolved" 
                                    value="resolved" {% if issue.status == 'resolved' %}checked{% endif %}>
                             <label class="form-check-label" for="statusResolved">
                                 Resolved
                             </label>
+                        </div>
+                    </div>
+                    
+                    <!-- Resolved Photo Upload - only shown when resolved status is selected -->
+                    <div id="resolvedPhotoSection" class="mb-3" style="display: {% if issue.status == 'resolved' %}block{% else %}none{% endif %};">
+                        <label for="resolvedPhoto" class="form-label">Upload Resolved Photo</label>
+                        <div class="input-group">
+                            <input type="file" class="form-control" id="resolvedPhoto" name="resolved_photo" 
+                                   accept="image/*" {% if issue.status != 'resolved' %}disabled{% endif %} 
+                                   {% if not issue.resolved_image %}required{% endif %}>
+                            <label class="input-group-text" for="resolvedPhoto">Choose file</label>
+                        </div>
+                        <div class="form-text">Please upload a photo showing the resolved issue.</div>
+                        
+                        <div class="mt-2" id="resolvedPhotoPreviewContainer" {% if not issue.resolved_image %}style="display: none;"{% endif %}>
+                            {% if issue.resolved_image %}
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <h6 class="mb-0">Current Resolved Photo:</h6>
+                                </div>
+                                <img src="data:image/jpeg;base64,{{ issue.resolved_image }}" class="img-fluid rounded" alt="Resolved issue" style="max-height: 200px;">
+                            {% endif %}
+                            <div id="resolvedPhotoPreview" {% if issue.resolved_image %}style="display: none;"{% endif %}></div>
                         </div>
                     </div>
                     
@@ -93,6 +152,52 @@
                 </form>
             </div>
         </div>
+        
+        <!-- Add JavaScript to show/hide resolved photo field -->
+        {% block page_scripts %}
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                const statusRadios = document.querySelectorAll('.status-radio');
+                const resolvedPhotoSection = document.getElementById('resolvedPhotoSection');
+                const resolvedPhotoInput = document.getElementById('resolvedPhoto');
+                
+                statusRadios.forEach(radio => {
+                    radio.addEventListener('change', function() {
+                        if (this.value === 'resolved') {
+                            resolvedPhotoSection.style.display = 'block';
+                            resolvedPhotoInput.disabled = false;
+                            resolvedPhotoInput.required = {% if not issue.resolved_image %}true{% else %}false{% endif %};
+                        } else {
+                            resolvedPhotoSection.style.display = 'none';
+                            resolvedPhotoInput.disabled = true;
+                            resolvedPhotoInput.required = false;
+                        }
+                    });
+                });
+                
+                // Image preview
+                const resolvedPhotoPreviewContainer = document.getElementById('resolvedPhotoPreviewContainer');
+                const resolvedPhotoPreview = document.getElementById('resolvedPhotoPreview');
+                
+                resolvedPhotoInput.addEventListener('change', function() {
+                    if (this.files && this.files[0]) {
+                        const reader = new FileReader();
+                        
+                        reader.onload = function(e) {
+                            resolvedPhotoPreviewContainer.style.display = 'block';
+                            resolvedPhotoPreview.style.display = 'block';
+                            resolvedPhotoPreview.innerHTML = `<div class="d-flex justify-content-between align-items-center mb-2">
+                                <h6 class="mb-0">New Resolved Photo Preview:</h6>
+                            </div>
+                            <img src="${e.target.result}" class="img-fluid rounded" alt="New resolved photo preview" style="max-height: 200px;">`;
+                        };
+                        
+                        reader.readAsDataURL(this.files[0]);
+                    }
+                });
+            });
+        </script>
+        {% endblock %}
         
         <!-- Reviews Section (only for resolved issues) -->
         {% if issue.status == 'resolved' %}
@@ -206,7 +311,20 @@
                                 Resolved
                                 {% endif %}
                             </h6>
-                            <p class="timeline-date">{{ format_datetime(issue.status_updated) }}</p>
+                            <p class="timeline-date">{{ issue.formatted_status_time }}</p>
+                        </div>
+                    </li>
+                    {% endif %}
+                    
+                    {% if issue.status == 'resolved' and issue.resolved_image %}
+                    <li class="timeline-item">
+                        <div class="timeline-marker bg-success"></div>
+                        <div class="timeline-content">
+                            <h6 class="timeline-title">Resolution Photo Added</h6>
+                            <p class="timeline-date">{{ issue.formatted_resolved_time }}</p>
+                            <div class="mt-2">
+                                <img src="data:image/jpeg;base64,{{ issue.resolved_image }}" class="img-fluid rounded" alt="Resolved issue" style="max-height: 150px;">
+                            </div>
                         </div>
                     </li>
                     {% endif %}
@@ -216,7 +334,7 @@
                         <div class="timeline-marker bg-info"></div>
                         <div class="timeline-content">
                             <h6 class="timeline-title">First Review Added</h6>
-                            <p class="timeline-date">{{ format_datetime(issue.reviews[0].timestamp) }}</p>
+                            <p class="timeline-date">{{ issue.reviews[0].formatted_time }}</p>
                         </div>
                     </li>
                     {% endif %}

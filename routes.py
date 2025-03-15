@@ -351,6 +351,26 @@ def issue_details(issue_id):
         if action == 'update_status':
             new_status = request.form.get('status')
             if new_status in ['not_resolved', 'ongoing', 'resolved']:
+                # If updating to resolved status, require a photo
+                if new_status == 'resolved':
+                    resolved_photo = request.files.get('resolved_photo')
+                    
+                    # Check if the issue already has a resolved photo
+                    has_resolved_photo = issue.get('resolved_image') is not None
+                    
+                    # Require a new photo if one doesn't already exist
+                    if not has_resolved_photo and not resolved_photo:
+                        flash('Please upload a photo showing the resolved issue', 'danger')
+                        return redirect(url_for('issue_details', issue_id=issue_id))
+                    
+                    # Process the new photo if provided
+                    if resolved_photo:
+                        compressed_image = compress_image(resolved_photo.read())
+                        encoded_image = base64.b64encode(compressed_image).decode('utf-8')
+                        issue['resolved_image'] = encoded_image
+                        issue['resolved_photo_timestamp'] = datetime.now().isoformat()
+                
+                # Update the status
                 issue['status'] = new_status
                 issue['status_updated'] = datetime.now().isoformat()
                 flash('Issue status updated', 'success')
@@ -376,10 +396,19 @@ def issue_details(issue_id):
     # Format datetime for display
     issue['formatted_time'] = format_datetime(issue['timestamp'])
     
+    # Format status updated time if it exists
+    if 'status_updated' in issue:
+        issue['formatted_status_time'] = format_datetime(issue['status_updated'])
+    
+    # Format resolved photo timestamp if it exists
+    if 'resolved_photo_timestamp' in issue:
+        issue['formatted_resolved_time'] = format_datetime(issue['resolved_photo_timestamp'])
+    
     # Format review timestamps
     for review in issue['reviews']:
         review['formatted_time'] = format_datetime(review['timestamp'])
     
     return render_template('issue_details.html', 
                            issue=issue, 
-                           get_status_color=get_issue_status_color)
+                           get_status_color=get_issue_status_color,
+                           format_datetime=format_datetime)
