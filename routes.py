@@ -456,6 +456,8 @@ def issue_details(issue_id):
         
         if action == 'update_status' and (is_officer or issue['user_id'] == current_user.id):
             new_status = request.form.get('status')
+            status_note = request.form.get('status_note', '').strip()
+            
             if new_status in ['not_resolved', 'ongoing', 'resolved']:
                 # If updating to resolved status, require a photo (only for officers)
                 if new_status == 'resolved':
@@ -487,10 +489,15 @@ def issue_details(issue_id):
                             storage.users[current_user.id]['issues_resolved'] = storage.users[current_user.id].get('issues_resolved', 0) + 1
                             current_user.issues_resolved += 1
                 
-                # Update the status
+                # Update the status and note
                 issue['status'] = new_status
                 issue['status_updated'] = datetime.now().isoformat()
                 issue['status_updated_by'] = current_user.id
+                
+                # Save the status note if provided
+                if status_note:
+                    issue['status_note'] = status_note
+                
                 flash('Issue status updated', 'success')
         
         elif action == 'assign_officer' and is_officer:
