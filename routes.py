@@ -411,6 +411,24 @@ def report_issue():
         conn.commit()
         conn.close()
         
+        # Add issue to storage.issues list
+        new_issue = {
+            'id': issue_id,
+            'user_id': current_user.id,
+            'user_name': current_user.name,
+            'title': title,
+            'category': category,
+            'description': description,
+            'location': location,
+            'ward': ward,
+            'latitude': float(latitude),
+            'longitude': float(longitude),
+            'image': encoded_image,
+            'status': 'not_resolved',
+            'timestamp': datetime.now().isoformat()
+        }
+        storage.issues.append(new_issue)
+        
         # Update user's issues reported count and stars
         if 'issues_reported' not in storage.users[current_user.id]:
             storage.users[current_user.id]['issues_reported'] = 0
