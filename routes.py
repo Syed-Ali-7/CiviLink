@@ -412,6 +412,8 @@ def report_issue():
         conn.close()
         
         # Update user's issues reported count and stars
+        if 'issues_reported' not in storage.users[current_user.id]:
+            storage.users[current_user.id]['issues_reported'] = 0
         storage.users[current_user.id]['issues_reported'] += 1
         current_user.issues_reported += 1
         
