@@ -45,6 +45,7 @@ def login():
         
         if action == 'send_otp':
             phone = request.form.get('phone')
+            user_type = request.form.get('user_type', 'citizen')
             
             if not is_valid_phone(phone):
                 flash('Please enter a valid phone number', 'danger')
@@ -53,6 +54,11 @@ def login():
             # Normalize the phone number
             phone = normalize_phone(phone)
             
+            # Check if trying to log in as BBMP officer but account doesn't exist
+            if user_type in ['officer', 'admin'] and (phone not in storage.users or storage.users[phone].get('role') not in ['officer', 'admin']):
+                flash('Access denied. This phone number is not registered as a BBMP officer.', 'danger')
+                return render_template('login.html')
+            
             # Generate and store OTP
             otp = generate_otp()
             storage.otps[phone] = (otp, datetime.now())
@@ -60,11 +66,12 @@ def login():
             # In a real app, we would send the OTP via SMS
             # For hackathon, we'll just show it
             flash(f'Your OTP is: {otp}', 'info')
-            return render_template('login.html', phone=phone, show_otp_form=True)
+            return render_template('login.html', phone=phone, user_type=user_type, show_otp_form=True)
             
         elif action == 'verify_otp':
             phone = request.form.get('phone')
             otp = request.form.get('otp')
+            user_type = request.form.get('user_type', 'citizen')
             
             if phone not in storage.otps:
                 flash('Please request a new OTP', 'danger')
@@ -80,25 +87,32 @@ def login():
             
             if otp != stored_otp:
                 flash('Invalid OTP. Please try again', 'danger')
-                return render_template('login.html', phone=phone, show_otp_form=True)
+                return render_template('login.html', phone=phone, user_type=user_type, show_otp_form=True)
             
             # OTP is valid, check if user exists
             if phone in storage.users:
+                user_data = storage.users[phone]
                 user = User(
                     id=phone,
                     phone=phone,
-                    name=storage.users[phone].get('name'),
-                    ward=storage.users[phone].get('ward')
+                    name=user_data.get('name'),
+                    ward=user_data.get('ward'),
+                    role=user_data.get('role', 'citizen'),
+                    employee_id=user_data.get('employee_id'),
+                    department=user_data.get('department')
                 )
-                user.issues_reported = storage.users[phone].get('issues_reported', 0)
-                user.stars = storage.users[phone].get('stars', 0)
+                user.issues_reported = user_data.get('issues_reported', 0)
+                user.issues_resolved = user_data.get('issues_resolved', 0)
+                user.stars = user_data.get('stars', 0)
             else:
                 # Create new user
                 user = User(id=phone, phone=phone)
                 storage.users[phone] = {
                     'phone': phone,
                     'issues_reported': 0,
+                    'issues_resolved': 0,
                     'stars': 0,
+                    'role': 'citizen',  # Default role
                     'created_at': datetime.now().isoformat()
                 }
             
@@ -209,14 +223,56 @@ def logout():
 @app.route('/dashboard')
 @login_required
 def dashboard():
-    # Get all issues, sorted by recency
-    all_issues = sorted(
-        storage.issues, 
-        key=lambda x: x['timestamp'], 
-        reverse=True
-    )
+    # Different dashboard views for citizens and officers
+    is_officer = current_user.is_officer()
     
-    # Stats for dashboard
+    # Get filter parameters
+    status_filter = request.args.get('status')
+    ward_filter = request.args.get('ward')
+    department_filter = request.args.get('department')
+    
+    # Base issues list
+    if is_officer:
+        # Officers only see issues from their ward or department by default
+        if current_user.ward and not ward_filter:
+            ward_filter = current_user.ward
+        
+        if current_user.department and not department_filter:
+            department_filter = current_user.department
+                    
+        # Get all issues for admins, or filtered by ward/department for other officers
+        if current_user.is_admin():
+            all_issues = storage.issues  # Admins see all issues
+        else:
+            # Regular officers see issues from their ward or department
+            all_issues = [i for i in storage.issues if 
+                         (i.get('ward') == current_user.ward) or 
+                         (i.get('department') == current_user.department) or
+                         (i.get('assigned_to') == current_user.id)]
+    else:
+        # Citizens see all issues by default
+        all_issues = storage.issues
+        
+        # But allow them to filter by their ward
+        if not ward_filter and current_user.ward:
+            ward_filter = current_user.ward
+    
+    # Sort by recency
+    all_issues = sorted(all_issues, key=lambda x: x['timestamp'], reverse=True)
+    
+    # Apply ward filter if specified
+    if ward_filter:
+        all_issues = [i for i in all_issues if i.get('ward') == ward_filter]
+        
+    # Apply department filter if specified (for officers)
+    if department_filter and is_officer:
+        all_issues = [i for i in all_issues if i.get('department') == department_filter]
+    
+    # Apply status filter if specified
+    if status_filter and status_filter != 'all':
+        all_issues = [i for i in all_issues if i['status'] == status_filter]
+    
+    # Dashboard stats
     stats = {
         'total': len(all_issues),
         'not_resolved': sum(1 for issue in all_issues if issue['status'] == 'not_resolved'),
@@ -224,21 +280,30 @@ def dashboard():
         'resolved': sum(1 for issue in all_issues if issue['status'] == 'resolved')
     }
     
-    # Filter by status if requested
-    status_filter = request.args.get('status')
-    if status_filter and status_filter != 'all':
-        filtered_issues = [i for i in all_issues if i['status'] == status_filter]
-    else:
-        filtered_issues = all_issues
+    # Additional stats for officers
+    if is_officer:
+        # Get issues assigned to this officer
+        issues_assigned_to_me = [i for i in storage.issues if i.get('assigned_to') == current_user.id]
+        stats.update({
+            'assigned_to_me': len(issues_assigned_to_me),
+            'resolved_by_me': sum(1 for issue in issues_assigned_to_me if issue['status'] == 'resolved')
+        })
     
     # Format datetime for display
-    for issue in filtered_issues:
+    for issue in all_issues:
         issue['formatted_time'] = format_datetime(issue['timestamp'])
+        if 'assigned_time' in issue:
+            issue['formatted_assigned_time'] = format_datetime(issue['assigned_time'])
     
     return render_template('dashboard.html', 
-                           issues=filtered_issues, 
+                           issues=all_issues, 
                            stats=stats,
+                           is_officer=is_officer,
+                           departments=storage.departments if is_officer else [],
+                           wards=storage.wards,
                            current_filter=status_filter or 'all',
+                           current_ward=ward_filter or '',
+                           current_department=department_filter or '',
                            get_status_color=get_issue_status_color)
 
 # Profile route
@@ -345,14 +410,48 @@ def issue_details(issue_id):
         flash('Issue not found', 'danger')
         return redirect(url_for('dashboard'))
     
+    # Check if user is officer
+    is_officer = current_user.is_officer()
+    
+    # Get list of officers who could be assigned to this issue
+    officers = []
+    if is_officer:
+        # Filter officers by department if issue has a department assigned
+        department = issue.get('department')
+        if not department and issue.get('category'):
+            # Map the issue category to a department if not set
+            category_to_dept = {
+                'Road Damage': 'Road Infrastructure',
+                'Garbage Collection': 'Solid Waste Management',
+                'Streetlight Issue': 'Engineering',
+                'Water Supply Problem': 'Water Supply',
+                'Sewage Overflow': 'Sewage and Drainage',
+                'Illegal Construction': 'Town Planning',
+                'Park Maintenance': 'Horticulture',
+                'Public Toilet Issue': 'Health',
+                'Stray Animal Concern': 'Health',
+                'Tree Hazard': 'Horticulture'
+            }
+            department = category_to_dept.get(issue.get('category'))
+            
+            # Update the issue with the determined department
+            if department and not issue.get('department'):
+                issue['department'] = department
+        
+        officers = storage.get_officers_by_department(department)
+    
     if request.method == 'POST':
         action = request.form.get('action')
         
-        if action == 'update_status':
+        if action == 'update_status' and (is_officer or issue['user_id'] == current_user.id):
             new_status = request.form.get('status')
             if new_status in ['not_resolved', 'ongoing', 'resolved']:
-                # If updating to resolved status, require a photo
+                # If updating to resolved status, require a photo (only for officers)
                 if new_status == 'resolved':
+                    if not is_officer:
+                        flash('Only BBMP officers can mark issues as resolved', 'danger')
+                        return redirect(url_for('issue_details', issue_id=issue_id))
+                    
                     resolved_photo = request.files.get('resolved_photo')
                     
                     # Check if the issue already has a resolved photo
@@ -369,13 +468,55 @@ def issue_details(issue_id):
                         encoded_image = base64.b64encode(compressed_image).decode('utf-8')
                         issue['resolved_image'] = encoded_image
                         issue['resolved_photo_timestamp'] = datetime.now().isoformat()
+                        issue['resolved_by'] = current_user.id
+                        issue['resolved_by_name'] = current_user.name
+                        
+                        # Update officer's resolved issues count
+                        if current_user.id in storage.users:
+                            storage.users[current_user.id]['issues_resolved'] = storage.users[current_user.id].get('issues_resolved', 0) + 1
+                            current_user.issues_resolved += 1
                 
                 # Update the status
                 issue['status'] = new_status
                 issue['status_updated'] = datetime.now().isoformat()
+                issue['status_updated_by'] = current_user.id
                 flash('Issue status updated', 'success')
         
+        elif action == 'assign_officer' and is_officer:
+            officer_id = request.form.get('officer_id')
+            
+            if officer_id and officer_id in storage.users:
+                officer = storage.users[officer_id]
+                # Assign the issue
+                issue['assigned_to'] = officer_id
+                issue['assigned_to_name'] = officer.get('name')
+                issue['assigned_time'] = datetime.now().isoformat()
+                issue['assigned_by'] = current_user.id
+                
+                # Set to ongoing when assigned
+                if issue['status'] == 'not_resolved':
+                    issue['status'] = 'ongoing'
+                    issue['status_updated'] = datetime.now().isoformat()
+                
+                flash(f'Issue assigned to {officer.get("name")}', 'success')
+            else:
+                flash('Invalid officer selection', 'danger')
+        
+        elif action == 'add_department' and is_officer:
+            department = request.form.get('department')
+            
+            if department in storage.departments:
+                issue['department'] = department
+                flash('Department updated successfully', 'success')
+            else:
+                flash('Invalid department selection', 'danger')
+        
         elif action == 'add_review' and issue['status'] == 'resolved':
+            # Only citizens can add reviews
+            if is_officer:
+                flash('Only citizens can review resolved issues', 'warning')
+                return redirect(url_for('issue_details', issue_id=issue_id))
+                
             rating = int(request.form.get('rating', 0))
             comment = request.form.get('comment', '')
             
@@ -392,6 +533,25 @@ def issue_details(issue_id):
                 
                 issue['reviews'].append(review)
                 flash('Review added successfully!', 'success')
+        
+        elif action == 'add_comment':
+            comment = request.form.get('comment', '').strip()
+            
+            if not comment:
+                flash('Comment cannot be empty', 'danger')
+            else:
+                if 'comments' not in issue:
+                    issue['comments'] = []
+                
+                issue['comments'].append({
+                    'user_id': current_user.id,
+                    'user_name': current_user.name,
+                    'role': current_user.role,
+                    'text': comment,
+                    'timestamp': datetime.now().isoformat()
+                })
+                
+                flash('Comment added successfully', 'success')
     
     # Format datetime for display
     issue['formatted_time'] = format_datetime(issue['timestamp'])
@@ -400,9 +560,18 @@ def issue_details(issue_id):
     if 'status_updated' in issue:
         issue['formatted_status_time'] = format_datetime(issue['status_updated'])
     
+    # Format assigned time if it exists
+    if 'assigned_time' in issue:
+        issue['formatted_assigned_time'] = format_datetime(issue['assigned_time'])
+    
     # Format resolved photo timestamp if it exists
     if 'resolved_photo_timestamp' in issue:
         issue['formatted_resolved_time'] = format_datetime(issue['resolved_photo_timestamp'])
+    
+    # Format comment timestamps
+    if 'comments' in issue:
+        for comment in issue['comments']:
+            comment['formatted_time'] = format_datetime(comment['timestamp'])
     
     # Format review timestamps
     for review in issue['reviews']:
@@ -410,5 +579,8 @@ def issue_details(issue_id):
     
     return render_template('issue_details.html', 
                            issue=issue, 
+                           is_officer=is_officer,
+                           officers=officers,
+                           departments=storage.departments,
                            get_status_color=get_issue_status_color,
                            format_datetime=format_datetime)

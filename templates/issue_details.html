@@ -91,58 +91,198 @@
             </div>
         </div>
         
-        <!-- Status Update Form (for demo purposes, in a real app would be admin-only) -->
+        <!-- BBMP Officer Controls - Only visible to officers -->
+        {% if is_officer %}
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-white">
+                <h5 class="mb-0">BBMP Officer Controls</h5>
+            </div>
+            <div class="card-body">
+                <ul class="nav nav-tabs mb-4" id="officerControlsTab" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="status-tab" data-bs-toggle="tab" data-bs-target="#status-tab-pane" type="button" role="tab" aria-controls="status-tab-pane" aria-selected="true">
+                            <i class="fas fa-tasks me-2"></i> Update Status
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="assign-tab" data-bs-toggle="tab" data-bs-target="#assign-tab-pane" type="button" role="tab" aria-controls="assign-tab-pane" aria-selected="false">
+                            <i class="fas fa-user-check me-2"></i> Assign Issue
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="department-tab" data-bs-toggle="tab" data-bs-target="#department-tab-pane" type="button" role="tab" aria-controls="department-tab-pane" aria-selected="false">
+                            <i class="fas fa-building me-2"></i> Department
+                        </button>
+                    </li>
+                </ul>
+                <div class="tab-content" id="officerControlsTabContent">
+                    <!-- Status Update Tab -->
+                    <div class="tab-pane fade show active" id="status-tab-pane" role="tabpanel" aria-labelledby="status-tab" tabindex="0">
+                        <form method="post" action="{{ url_for('issue_details', issue_id=issue.id) }}" enctype="multipart/form-data" id="statusUpdateForm">
+                            <input type="hidden" name="action" value="update_status">
+                            
+                            <div class="d-flex gap-2 mb-3">
+                                <div class="form-check">
+                                    <input class="form-check-input status-radio" type="radio" name="status" id="statusNotResolved" 
+                                           value="not_resolved" {% if issue.status == 'not_resolved' %}checked{% endif %}>
+                                    <label class="form-check-label" for="statusNotResolved">
+                                        Not Resolved
+                                    </label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input status-radio" type="radio" name="status" id="statusOngoing" 
+                                           value="ongoing" {% if issue.status == 'ongoing' %}checked{% endif %}>
+                                    <label class="form-check-label" for="statusOngoing">
+                                        Ongoing
+                                    </label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input status-radio" type="radio" name="status" id="statusResolved" 
+                                           value="resolved" {% if issue.status == 'resolved' %}checked{% endif %}>
+                                    <label class="form-check-label" for="statusResolved">
+                                        Resolved
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            <!-- Resolved Photo Upload - only shown when resolved status is selected -->
+                            <div id="resolvedPhotoSection" class="mb-3" style="display: {% if issue.status == 'resolved' %}block{% else %}none{% endif %};">
+                                <label for="resolvedPhoto" class="form-label">Upload Resolved Photo</label>
+                                <div class="input-group">
+                                    <input type="file" class="form-control" id="resolvedPhoto" name="resolved_photo" 
+                                           accept="image/*" {% if issue.status != 'resolved' %}disabled{% endif %} 
+                                           {% if not issue.resolved_image %}required{% endif %}>
+                                    <label class="input-group-text" for="resolvedPhoto">Choose file</label>
+                                </div>
+                                <div class="form-text">Please upload a photo showing the resolved issue. This is mandatory.</div>
+                                
+                                <div class="mt-2" id="resolvedPhotoPreviewContainer" {% if not issue.resolved_image %}style="display: none;"{% endif %}>
+                                    {% if issue.resolved_image %}
+                                        <div class="d-flex justify-content-between align-items-center mb-2">
+                                            <h6 class="mb-0">Current Resolved Photo:</h6>
+                                        </div>
+                                        <img src="data:image/jpeg;base64,{{ issue.resolved_image }}" class="img-fluid rounded" alt="Resolved issue" style="max-height: 200px;">
+                                    {% endif %}
+                                    <div id="resolvedPhotoPreview" {% if issue.resolved_image %}style="display: none;"{% endif %}></div>
+                                </div>
+                            </div>
+                            
+                            <button type="submit" class="btn btn-primary mt-3">
+                                <i class="fas fa-sync-alt me-2"></i> Update Status
+                            </button>
+                        </form>
+                    </div>
+                    
+                    <!-- Assign Issue Tab -->
+                    <div class="tab-pane fade" id="assign-tab-pane" role="tabpanel" aria-labelledby="assign-tab" tabindex="0">
+                        <form method="post" action="{{ url_for('issue_details', issue_id=issue.id) }}">
+                            <input type="hidden" name="action" value="assign_officer">
+                            
+                            {% if issue.assigned_to %}
+                            <div class="alert alert-info mb-3">
+                                <i class="fas fa-user-check me-2"></i>
+                                This issue is currently assigned to <strong>{{ issue.assigned_to_name }}</strong> 
+                                {% if issue.formatted_assigned_time %}(Since: {{ issue.formatted_assigned_time }}){% endif %}
+                            </div>
+                            {% endif %}
+                            
+                            <div class="mb-3">
+                                <label for="officerSelect" class="form-label">Select Officer to Assign</label>
+                                <select class="form-select" id="officerSelect" name="officer_id">
+                                    <option value="">-- Select BBMP Officer --</option>
+                                    {% for officer in officers %}
+                                    <option value="{{ officer.phone }}" {% if issue.assigned_to == officer.phone %}selected{% endif %}>
+                                        {{ officer.name }} - {{ officer.employee_id }} ({{ officer.department }})
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                                <div class="form-text">
+                                    {% if officers|length == 0 %}
+                                    No officers available for this department. Please set the department first.
+                                    {% else %}
+                                    Select an officer to assign this issue to.
+                                    {% endif %}
+                                </div>
+                            </div>
+                            
+                            <button type="submit" class="btn btn-primary" {% if officers|length == 0 %}disabled{% endif %}>
+                                <i class="fas fa-user-plus me-2"></i> Assign Officer
+                            </button>
+                        </form>
+                    </div>
+                    
+                    <!-- Department Tab -->
+                    <div class="tab-pane fade" id="department-tab-pane" role="tabpanel" aria-labelledby="department-tab" tabindex="0">
+                        <form method="post" action="{{ url_for('issue_details', issue_id=issue.id) }}">
+                            <input type="hidden" name="action" value="add_department">
+                            
+                            {% if issue.department %}
+                            <div class="alert alert-info mb-3">
+                                <i class="fas fa-building me-2"></i>
+                                This issue is currently assigned to <strong>{{ issue.department }} Department</strong>
+                            </div>
+                            {% endif %}
+                            
+                            <div class="mb-3">
+                                <label for="departmentSelect" class="form-label">Select Department</label>
+                                <select class="form-select" id="departmentSelect" name="department">
+                                    <option value="">-- Select Department --</option>
+                                    {% for dept in departments %}
+                                    <option value="{{ dept }}" {% if issue.department == dept %}selected{% endif %}>
+                                        {{ dept }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                                <div class="form-text">
+                                    Select the appropriate BBMP department for this issue.
+                                </div>
+                            </div>
+                            
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save me-2"></i> Update Department
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <!-- Status Update Form (for citizens) -->
         <div class="card border-0 shadow-sm mb-4">
             <div class="card-header bg-white">
                 <h5 class="mb-0">Update Status</h5>
             </div>
             <div class="card-body">
-                <form method="post" action="{{ url_for('issue_details', issue_id=issue.id) }}" enctype="multipart/form-data" id="statusUpdateForm">
+                <form method="post" action="{{ url_for('issue_details', issue_id=issue.id) }}" id="statusUpdateForm">
                     <input type="hidden" name="action" value="update_status">
+                    
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <strong>Note:</strong> As a citizen, you can only mark issues as "Not Resolved" or "Ongoing". 
+                        Only BBMP officers can mark issues as "Resolved" with photo evidence.
+                    </div>
                     
                     <div class="d-flex gap-2 mb-3">
                         <div class="form-check">
-                            <input class="form-check-input status-radio" type="radio" name="status" id="statusNotResolved" 
+                            <input class="form-check-input" type="radio" name="status" id="statusNotResolved" 
                                    value="not_resolved" {% if issue.status == 'not_resolved' %}checked{% endif %}>
                             <label class="form-check-label" for="statusNotResolved">
                                 Not Resolved
                             </label>
                         </div>
                         <div class="form-check">
-                            <input class="form-check-input status-radio" type="radio" name="status" id="statusOngoing" 
+                            <input class="form-check-input" type="radio" name="status" id="statusOngoing" 
                                    value="ongoing" {% if issue.status == 'ongoing' %}checked{% endif %}>
                             <label class="form-check-label" for="statusOngoing">
                                 Ongoing
                             </label>
                         </div>
                         <div class="form-check">
-                            <input class="form-check-input status-radio" type="radio" name="status" id="statusResolved" 
-                                   value="resolved" {% if issue.status == 'resolved' %}checked{% endif %}>
-                            <label class="form-check-label" for="statusResolved">
-                                Resolved
+                            <input class="form-check-input" type="radio" name="status" id="statusResolved" 
+                                   value="resolved" {% if issue.status == 'resolved' %}checked{% endif %} disabled>
+                            <label class="form-check-label text-muted" for="statusResolved">
+                                Resolved (BBMP Officers only)
                             </label>
-                        </div>
-                    </div>
-                    
-                    <!-- Resolved Photo Upload - only shown when resolved status is selected -->
-                    <div id="resolvedPhotoSection" class="mb-3" style="display: {% if issue.status == 'resolved' %}block{% else %}none{% endif %};">
-                        <label for="resolvedPhoto" class="form-label">Upload Resolved Photo</label>
-                        <div class="input-group">
-                            <input type="file" class="form-control" id="resolvedPhoto" name="resolved_photo" 
-                                   accept="image/*" {% if issue.status != 'resolved' %}disabled{% endif %} 
-                                   {% if not issue.resolved_image %}required{% endif %}>
-                            <label class="input-group-text" for="resolvedPhoto">Choose file</label>
-                        </div>
-                        <div class="form-text">Please upload a photo showing the resolved issue.</div>
-                        
-                        <div class="mt-2" id="resolvedPhotoPreviewContainer" {% if not issue.resolved_image %}style="display: none;"{% endif %}>
-                            {% if issue.resolved_image %}
-                                <div class="d-flex justify-content-between align-items-center mb-2">
-                                    <h6 class="mb-0">Current Resolved Photo:</h6>
-                                </div>
-                                <img src="data:image/jpeg;base64,{{ issue.resolved_image }}" class="img-fluid rounded" alt="Resolved issue" style="max-height: 200px;">
-                            {% endif %}
-                            <div id="resolvedPhotoPreview" {% if issue.resolved_image %}style="display: none;"{% endif %}></div>
                         </div>
                     </div>
                     
@@ -152,6 +292,7 @@
                 </form>
             </div>
         </div>
+        {% endif %}
         
         <!-- Add JavaScript to show/hide resolved photo field -->
         {% block page_scripts %}
