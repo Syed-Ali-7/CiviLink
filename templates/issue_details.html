@@ -500,5 +500,179 @@
             </div>
         </div>
     </div>
+    
+    <!-- Comments & Reviews Section -->
+    <div class="row mt-4">
+        <div class="col-md-12">
+            <!-- Comment Section -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="fas fa-comments me-2"></i> Discussion</h5>
+                </div>
+                <div class="card-body">
+                    <!-- Comments List -->
+                    {% if issue.comments and issue.comments|length > 0 %}
+                    <div class="comment-list mb-4">
+                        {% for comment in issue.comments %}
+                        <div class="comment-item mb-3">
+                            <div class="d-flex">
+                                <div class="comment-avatar me-3">
+                                    <div class="avatar-circle {% if comment.role in ['officer', 'admin'] %}bg-primary{% else %}bg-secondary{% endif %} small">
+                                        {% if comment.user_name %}
+                                            {{ comment.user_name[0].upper() }}
+                                        {% else %}
+                                            <i class="fas fa-user"></i>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <div class="comment-content">
+                                    <div class="comment-header">
+                                        <span class="fw-bold">{{ comment.user_name }}</span>
+                                        {% if comment.role == 'officer' %}
+                                        <span class="badge bg-primary ms-2">BBMP Officer</span>
+                                        {% elif comment.role == 'admin' %}
+                                        <span class="badge bg-primary ms-2">BBMP Admin</span>
+                                        {% endif %}
+                                        <small class="text-muted ms-2">{{ comment.formatted_time }}</small>
+                                    </div>
+                                    <div class="comment-text mt-1">
+                                        {{ comment.text }}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4">
+                        <div class="text-muted">
+                            <i class="fas fa-comments fa-2x mb-3"></i>
+                            <p>No comments yet. Be the first to add a comment!</p>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Comment Form -->
+                    <form method="post" action="{{ url_for('issue_details', issue_id=issue.id) }}">
+                        <input type="hidden" name="action" value="add_comment">
+                        <div class="mb-3">
+                            <label for="comment" class="form-label">Add a Comment</label>
+                            <textarea class="form-control" id="comment" name="comment" rows="3" required></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-paper-plane me-2"></i> Post Comment
+                        </button>
+                    </form>
+                </div>
+            </div>
+            
+            <!-- Reviews Section - Only shown for resolved issues -->
+            {% if issue.status == 'resolved' %}
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="fas fa-star text-warning me-2"></i> Reviews & Ratings</h5>
+                </div>
+                <div class="card-body">
+                    <!-- Reviews List -->
+                    {% if issue.reviews and issue.reviews|length > 0 %}
+                    <div class="reviews-list mb-4">
+                        <!-- Average Rating -->
+                        <div class="average-rating text-center mb-4">
+                            {% set total_rating = 0 %}
+                            {% for review in issue.reviews %}
+                                {% set total_rating = total_rating + review.rating %}
+                            {% endfor %}
+                            {% set avg_rating = (total_rating / issue.reviews|length)|round(1) %}
+                            
+                            <h4 class="mb-2">{{ avg_rating }} out of 5</h4>
+                            <div class="stars-display mb-2">
+                                {% for i in range(5) %}
+                                    {% if i < avg_rating|int %}
+                                        <i class="fas fa-star text-warning"></i>
+                                    {% elif i < avg_rating and i >= avg_rating|int %}
+                                        <i class="fas fa-star-half-alt text-warning"></i>
+                                    {% else %}
+                                        <i class="far fa-star text-warning"></i>
+                                    {% endif %}
+                                {% endfor %}
+                            </div>
+                            <p class="text-muted">Based on {{ issue.reviews|length }} review{% if issue.reviews|length != 1 %}s{% endif %}</p>
+                        </div>
+                        
+                        {% for review in issue.reviews %}
+                        <div class="review-item mb-3 p-3 border rounded">
+                            <div class="d-flex justify-content-between mb-2">
+                                <div>
+                                    <span class="fw-bold">{{ review.user_name }}</span>
+                                    <small class="text-muted ms-2">{{ review.formatted_time }}</small>
+                                </div>
+                                <div class="stars-display">
+                                    {% for i in range(5) %}
+                                        {% if i < review.rating %}
+                                            <i class="fas fa-star text-warning"></i>
+                                        {% else %}
+                                            <i class="far fa-star text-warning"></i>
+                                        {% endif %}
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            {% if review.comment %}
+                            <div class="review-comment mt-2">
+                                {{ review.comment }}
+                            </div>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4">
+                        <div class="text-muted">
+                            <i class="fas fa-star fa-2x mb-3 text-warning"></i>
+                            <p>No reviews yet. Be the first to rate this resolution!</p>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Review Form - Only for citizens and not the reporter of the issue -->
+                    {% if not is_officer and current_user.id != issue.user_id %}
+                    <form method="post" action="{{ url_for('issue_details', issue_id=issue.id) }}">
+                        <input type="hidden" name="action" value="add_review">
+                        <div class="mb-3">
+                            <label for="rating" class="form-label">Your Rating</label>
+                            <div class="star-rating mb-3">
+                                <div class="d-flex gap-2">
+                                    {% for i in range(1, 6) %}
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="rating" id="rating{{ i }}" value="{{ i }}" required>
+                                        <label class="form-check-label" for="rating{{ i }}">
+                                            {{ i }} star{% if i != 1 %}s{% endif %}
+                                        </label>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="reviewComment" class="form-label">Your Review (Optional)</label>
+                            <textarea class="form-control" id="reviewComment" name="comment" rows="3"></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-star me-2"></i> Submit Review
+                        </button>
+                    </form>
+                    {% elif current_user.id == issue.user_id %}
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i> You reported this issue, so you cannot review it.
+                    </div>
+                    {% elif is_officer %}
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i> As a BBMP officer, you can view but not add reviews.
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
 </div>
 {% endblock %}

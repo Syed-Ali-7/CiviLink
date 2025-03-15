@@ -92,6 +92,46 @@ body {
     margin: 0 auto;
 }
 
+.avatar-circle.small {
+    width: 40px;
+    height: 40px;
+    font-size: 1.2rem;
+    margin: 0;
+}
+
+/* Comment Section Styling */
+.comment-item {
+    position: relative;
+    padding-bottom: 15px;
+}
+
+.comment-item:not(:last-child):before {
+    content: '';
+    position: absolute;
+    left: 20px;
+    top: 40px;
+    bottom: 0;
+    width: 1px;
+    background-color: #e9ecef;
+}
+
+.comment-content {
+    flex: 1;
+    background-color: #f8f9fa;
+    padding: 12px 15px;
+    border-radius: 10px;
+}
+
+.comment-text {
+    white-space: pre-line;
+}
+
+/* Review Styling */
+.review-item {
+    border-left: 3px solid var(--warning-color) !important;
+    background-color: #fff;
+}
+
 /* Stars Display */
 .stars-display {
     font-size: 1.5rem;
