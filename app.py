@@ -23,6 +23,7 @@ class Storage:
         self.otps = {}   # phone_number -> (otp, timestamp)
         self.reviews = [] # List of review dictionaries
         self.issues = [] # List of issue dictionaries
+        self.issue_counter = 1  # Counter for generating unique issue IDs
         self.departments = [
             "Solid Waste Management",
             "Road Infrastructure",
