@@ -276,6 +276,13 @@
                         Only BBMP officers can mark issues as "Resolved" with photo evidence.
                     </div>
                     
+                    {% if issue.status_note %}
+                    <div class="alert alert-secondary">
+                        <i class="fas fa-comment me-2"></i>
+                        <strong>Current Status Note:</strong> {{ issue.status_note }}
+                    </div>
+                    {% endif %}
+                    
                     <div class="alert alert-info mb-3">
                         <i class="fas fa-info-circle me-2"></i>
                         <strong>Note:</strong> Only BBMP officers can mark issues as "Resolved". Officers must provide photo evidence of the resolution.
@@ -308,7 +315,7 @@
                     <!-- Status Update Note -->
                     <div class="mb-3">
                         <label for="citizenStatusNote" class="form-label">Status Update Note</label>
-                        <textarea class="form-control" id="citizenStatusNote" name="status_note" rows="3" placeholder="Add a note explaining the status update...">{{ issue.status_note }}</textarea>
+                        <textarea class="form-control" id="citizenStatusNote" name="status_note" rows="3" placeholder="Add a note explaining the status update...">{% if issue.status_note %}{{ issue.status_note }}{% endif %}</textarea>
                         <div class="form-text">Please provide additional details about this status update.</div>
                     </div>
                     
