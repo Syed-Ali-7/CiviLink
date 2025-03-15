@@ -98,4 +98,55 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     });
+    
+    // Handle status radios for issue resolution
+    const statusRadios = document.querySelectorAll('.status-radio');
+    if (statusRadios.length > 0) {
+        statusRadios.forEach(radio => {
+            radio.addEventListener('change', function() {
+                const resolvedPhotoSection = document.getElementById('resolvedPhotoSection');
+                const resolvedPhotoInput = document.getElementById('resolvedPhoto');
+                
+                if (this.value === 'resolved') {
+                    resolvedPhotoSection.style.display = 'block';
+                    resolvedPhotoInput.disabled = false;
+                    resolvedPhotoInput.required = true;
+                    
+                    // Show the preview container
+                    const previewContainer = document.getElementById('resolvedPhotoPreviewContainer');
+                    if (previewContainer) {
+                        previewContainer.style.display = 'block';
+                    }
+                } else {
+                    resolvedPhotoSection.style.display = 'none';
+                    resolvedPhotoInput.disabled = true;
+                    resolvedPhotoInput.required = false;
+                }
+            });
+        });
+    }
+    
+    // Handle resolved photo preview
+    const resolvedPhotoInput = document.getElementById('resolvedPhoto');
+    if (resolvedPhotoInput) {
+        resolvedPhotoInput.addEventListener('change', function() {
+            const previewContainer = document.getElementById('resolvedPhotoPreviewContainer');
+            const previewElement = document.getElementById('resolvedPhotoPreview');
+            
+            if (previewContainer && previewElement && this.files && this.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    previewElement.innerHTML = `
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <h6 class="mb-0">New Resolved Photo:</h6>
+                        </div>
+                        <img src="${e.target.result}" class="img-fluid rounded" alt="Resolved issue preview" style="max-height: 200px;">
+                    `;
+                    previewElement.style.display = 'block';
+                    previewContainer.style.display = 'block';
+                };
+                reader.readAsDataURL(this.files[0]);
+            }
+        });
+    }
 });
