@@ -99,33 +99,6 @@ class Storage:
                     'employee_id': 'BBMP003',
                     'department': 'Engineering',
                     'verified': True
-                },
-                {
-                    'phone': '9876543213',
-                    'name': 'Anita Desai',
-                    'ward': 'Malleswaram',
-                    'role': 'officer',
-                    'employee_id': 'BBMP004',
-                    'department': 'Health',
-                    'verified': True
-                },
-                {
-                    'phone': '9876543214',
-                    'name': 'Mohammed Khan',
-                    'ward': 'Hebbal',
-                    'role': 'officer',
-                    'employee_id': 'BBMP005',
-                    'department': 'Town Planning',
-                    'verified': True
-                },
-                {
-                    'phone': '9876543215',
-                    'name': 'Lakshmi Rao',
-                    'ward': 'Kodigehalli',
-                    'role': 'officer',
-                    'employee_id': 'BBMP006',
-                    'department': 'Water Supply',
-                    'verified': True
                 }
             ]
             
