@@ -425,7 +425,13 @@ def report_issue():
             'longitude': float(longitude),
             'image': encoded_image,
             'status': 'not_resolved',
-            'timestamp': datetime.now().isoformat()
+            'timestamp': datetime.now().isoformat(),
+            'reviews': [],
+            'comments': [],
+            'department': None,
+            'assigned_to': None,
+            'assigned_to_name': None,
+            'assigned_time': None
         }
         storage.issues.append(new_issue)
         
