@@ -8,7 +8,17 @@ import re
 
 def generate_otp():
     """Generate a 6-digit OTP"""
-    return ''.join(random.choices(string.digits, k=6))
+    otp = ''.join(random.choices(string.digits, k=6))
+    return otp
+
+def send_otp(phone_number, otp):
+    """
+    Simulate sending OTP to phone number
+    In production, this would integrate with an SMS service
+    """
+    print(f"[SIMULATED SMS] Sending OTP {otp} to {phone_number}")
+    # In production, you would use an SMS service like Twilio here
+    return True
 
 def is_valid_phone(phone):
     """Validate Indian phone number format"""
