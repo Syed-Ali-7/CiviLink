@@ -18,13 +18,14 @@ login_manager.init_app(app)
 login_manager.login_view = 'login'
 
 # In-memory storage for our hackathon MVP
+from database import init_db, get_db
+
 class Storage:
     def __init__(self):
         self.users = {}  # phone_number -> user_data
         self.otps = {}   # phone_number -> (otp, timestamp)
-        self.issues = []  # List of issue dictionaries
         self.reviews = [] # List of review dictionaries
-        self.issue_counter = 1  # Counter for generating unique issue IDs
+        init_db()  # Initialize SQLite database
         self.departments = [
             "Solid Waste Management",
             "Road Infrastructure",

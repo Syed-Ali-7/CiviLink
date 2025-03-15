@@ -394,7 +394,21 @@ def report_issue():
             'comments': []
         }
         
-        storage.issues.append(new_issue)
+        conn = get_db()
+        c = conn.cursor()
+        c.execute('''
+            INSERT INTO issues (
+                user_id, user_name, title, category, description, 
+                location, ward, latitude, longitude, image, 
+                status, timestamp
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ''', (
+            current_user.id, current_user.name, title, category, description,
+            location, ward, float(latitude), float(longitude), encoded_image,
+            'not_resolved', datetime.now().isoformat()
+        ))
+        conn.commit()
+        conn.close()
         
         # Update user's issues reported count and stars
         storage.users[current_user.id]['issues_reported'] += 1
