@@ -26,16 +26,6 @@ class Storage:
         self.otps = {}   # phone_number -> (otp, timestamp)
         self.reviews = [] # List of review dictionaries
         init_db()  # Initialize SQLite database
-        
-        # Property to access issues from database
-        @property
-        def issues(self):
-            conn = get_db()
-            cursor = conn.cursor()
-            issues = cursor.execute('SELECT * FROM issues').fetchall()
-            conn.close()
-            return issues
-            
         self.departments = [
             "Solid Waste Management",
             "Road Infrastructure",
@@ -153,3 +143,13 @@ storage = Storage()
 
 # Import routes
 from routes import *
+
+
+    @property
+    def issues(self):
+        conn = get_db()
+        cursor = conn.cursor()
+        issues = cursor.execute('SELECT * FROM issues').fetchall()
+        conn.close()
+        return issues
+
