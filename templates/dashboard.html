@@ -160,7 +160,19 @@
     </div>
 </div>
 
+<!-- Issues Map -->
+{% if issues %}
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-body">
+        <h5 class="card-title mb-3">
+            <i class="fas fa-map me-2"></i> Issues Map
+        </h5>
+        <div id="issues-map" style="height: 400px; width: 100%; border-radius: 8px;"></div>
+    </div>
+</div>
+
 <!-- Issues List -->
+{% endif %}
 {% if issues %}
 <div class="row g-4">
     {% for issue in issues %}
@@ -265,5 +277,52 @@
         
         window.location.href = url.toString();
     }
+    
+    // Initialize the issues map if it exists on page
+    document.addEventListener('DOMContentLoaded', function() {
+        const mapElement = document.getElementById('issues-map');
+        if (mapElement) {
+            // Default Bengaluru coordinates (center of the city)
+            const bengaluruCoords = [12.9716, 77.5946];
+            
+            // Initialize the map with Bengaluru center
+            const issuesMap = L.map('issues-map').setView(bengaluruCoords, 11);
+            
+            // Add OpenStreetMap tile layer
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+                maxZoom: 19
+            }).addTo(issuesMap);
+            
+            // Add markers for each issue
+            {% for issue in issues %}
+                {% if issue.latitude and issue.longitude %}
+                // Create marker for each issue with coordinates
+                const marker = L.marker([{{ issue.latitude }}, {{ issue.longitude }}]).addTo(issuesMap);
+                
+                // Add popup with issue details
+                marker.bindPopup(`
+                    <strong>{{ issue.title }}</strong><br>
+                    {{ issue.category }}{% if issue.department %} - {{ issue.department }}{% endif %}<br>
+                    <span class="badge bg-{{ get_status_color(issue.status) }}">
+                        {% if issue.status == 'not_resolved' %}Not Resolved
+                        {% elif issue.status == 'ongoing' %}Ongoing
+                        {% else %}Resolved{% endif %}
+                    </span><br>
+                    <small>{{ issue.location }} ({{ issue.ward }})</small><br>
+                    <a href="{{ url_for('issue_details', issue_id=issue.id) }}" class="btn btn-sm btn-primary mt-2">View Details</a>
+                `);
+                {% endif %}
+            {% endfor %}
+            
+            // If no issues have coordinates, still show the Bengaluru map
+            {% if issues|selectattr('latitude')|list|length == 0 %}
+            // Add a marker for the center of Bengaluru
+            L.marker(bengaluruCoords)
+                .addTo(issuesMap)
+                .bindPopup('Bengaluru City Center');
+            {% endif %}
+        }
+    });
 </script>
 {% endblock %}
