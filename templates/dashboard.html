@@ -1,0 +1,144 @@
+{% extends 'base.html' %}
+
+{% block title %}Dashboard - BBMP Ward Issues Tracker{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="mb-0"><i class="fas fa-tachometer-alt me-2"></i> Issues Dashboard</h1>
+    <a href="{{ url_for('report_issue') }}" class="btn btn-primary">
+        <i class="fas fa-plus me-2"></i> Report New Issue
+    </a>
+</div>
+
+<!-- Statistics Cards -->
+<div class="row g-4 mb-4">
+    <div class="col-md-3">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body text-center">
+                <div class="display-4 text-primary mb-2">
+                    <i class="fas fa-clipboard-list"></i>
+                </div>
+                <h5 class="card-title">Total Issues</h5>
+                <p class="card-text display-6">{{ stats.total }}</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body text-center">
+                <div class="display-4 text-danger mb-2">
+                    <i class="fas fa-exclamation-triangle"></i>
+                </div>
+                <h5 class="card-title">Not Resolved</h5>
+                <p class="card-text display-6">{{ stats.not_resolved }}</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body text-center">
+                <div class="display-4 text-warning mb-2">
+                    <i class="fas fa-tools"></i>
+                </div>
+                <h5 class="card-title">Ongoing</h5>
+                <p class="card-text display-6">{{ stats.ongoing }}</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body text-center">
+                <div class="display-4 text-success mb-2">
+                    <i class="fas fa-check-circle"></i>
+                </div>
+                <h5 class="card-title">Resolved</h5>
+                <p class="card-text display-6">{{ stats.resolved }}</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Filter Controls -->
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-body">
+        <div class="row g-2 align-items-center">
+            <div class="col-md-6">
+                <h5 class="mb-0"><i class="fas fa-filter me-2"></i> Filter Issues</h5>
+            </div>
+            <div class="col-md-6">
+                <div class="d-flex gap-2 justify-content-md-end">
+                    <a href="{{ url_for('dashboard', status='all') }}" class="btn btn-sm {{ 'btn-primary' if current_filter == 'all' else 'btn-outline-primary' }}">
+                        All
+                    </a>
+                    <a href="{{ url_for('dashboard', status='not_resolved') }}" class="btn btn-sm {{ 'btn-danger' if current_filter == 'not_resolved' else 'btn-outline-danger' }}">
+                        Not Resolved
+                    </a>
+                    <a href="{{ url_for('dashboard', status='ongoing') }}" class="btn btn-sm {{ 'btn-warning' if current_filter == 'ongoing' else 'btn-outline-warning' }}">
+                        Ongoing
+                    </a>
+                    <a href="{{ url_for('dashboard', status='resolved') }}" class="btn btn-sm {{ 'btn-success' if current_filter == 'resolved' else 'btn-outline-success' }}">
+                        Resolved
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Issues List -->
+{% if issues %}
+<div class="row g-4">
+    {% for issue in issues %}
+    <div class="col-md-4">
+        <div class="card h-100 border-0 shadow-sm issue-card">
+            <div class="card-img-top position-relative">
+                <img src="data:image/jpeg;base64,{{ issue.image }}" alt="{{ issue.title }}" class="img-fluid issue-thumbnail">
+                <span class="badge bg-{{ get_status_color(issue.status) }} status-badge">
+                    {% if issue.status == 'not_resolved' %}
+                        Not Resolved
+                    {% elif issue.status == 'ongoing' %}
+                        Ongoing
+                    {% else %}
+                        Resolved
+                    {% endif %}
+                </span>
+            </div>
+            <div class="card-body">
+                <h5 class="card-title">{{ issue.title }}</h5>
+                <p class="card-text text-muted mb-2">
+                    <span class="badge bg-secondary me-2">{{ issue.category }}</span>
+                    <i class="fas fa-map-marker-alt me-1"></i> {{ issue.location }}
+                </p>
+                <p class="card-text">{{ issue.description[:100] }}{% if issue.description|length > 100 %}...{% endif %}</p>
+            </div>
+            <div class="card-footer bg-white">
+                <div class="d-flex justify-content-between align-items-center">
+                    <small class="text-muted">
+                        <i class="fas fa-calendar-alt me-1"></i> {{ issue.formatted_time }}
+                    </small>
+                    <a href="{{ url_for('issue_details', issue_id=issue.id) }}" class="btn btn-sm btn-primary">
+                        View Details
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="text-center py-5">
+    <div class="display-1 text-muted mb-4">
+        <i class="fas fa-clipboard-list"></i>
+    </div>
+    <h3 class="text-muted">No issues found</h3>
+    {% if current_filter != 'all' %}
+    <p>No issues with the selected status. <a href="{{ url_for('dashboard') }}">View all issues</a>.</p>
+    {% else %}
+    <p>Start by reporting an issue in your ward.</p>
+    <a href="{{ url_for('report_issue') }}" class="btn btn-primary mt-3">
+        <i class="fas fa-plus me-2"></i> Report New Issue
+    </a>
+    {% endif %}
+</div>
+{% endif %}
+{% endblock %}

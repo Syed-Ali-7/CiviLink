@@ -1,0 +1,241 @@
+{% extends 'base.html' %}
+
+{% block title %}BBMP Ward Issues Tracker - Home{% endblock %}
+
+{% block content %}
+<div class="jumbotron bg-light p-5 rounded-3 mb-4">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-md-6">
+                <h1 class="display-4 fw-bold text-primary">Report & Track BBMP Ward Issues</h1>
+                <p class="lead">
+                    Help improve Bengaluru by reporting issues like potholes, street lights, and garbage collection in your ward.
+                </p>
+                {% if not current_user.is_authenticated %}
+                <div class="d-grid gap-2 d-md-flex justify-content-md-start">
+                    <a href="{{ url_for('signup') }}" class="btn btn-primary btn-lg px-4 me-md-2">
+                        <i class="fas fa-user-plus me-2"></i> Sign Up
+                    </a>
+                    <a href="{{ url_for('login') }}" class="btn btn-outline-secondary btn-lg px-4">
+                        <i class="fas fa-sign-in-alt me-2"></i> Login
+                    </a>
+                </div>
+                {% else %}
+                <div class="d-grid gap-2 d-md-flex justify-content-md-start">
+                    <a href="{{ url_for('report_issue') }}" class="btn btn-primary btn-lg px-4 me-md-2">
+                        <i class="fas fa-exclamation-circle me-2"></i> Report Issue
+                    </a>
+                    <a href="{{ url_for('dashboard') }}" class="btn btn-outline-secondary btn-lg px-4">
+                        <i class="fas fa-tachometer-alt me-2"></i> View Dashboard
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+            <div class="col-md-6 text-center">
+                <div class="lottie-animation">
+                    <svg class="city-svg" viewBox="0 0 600 400" xmlns="http://www.w3.org/2000/svg">
+                        <rect x="50" y="200" width="100" height="200" fill="#4dabf7" />
+                        <rect x="75" y="250" width="20" height="30" fill="#f8f9fa" />
+                        <rect x="105" y="250" width="20" height="30" fill="#f8f9fa" />
+                        <rect x="75" y="300" width="20" height="30" fill="#f8f9fa" />
+                        <rect x="105" y="300" width="20" height="30" fill="#f8f9fa" />
+                        <rect x="150" y="150" width="120" height="250" fill="#4c6ef5" />
+                        <rect x="170" y="180" width="20" height="30" fill="#f8f9fa" />
+                        <rect x="210" y="180" width="20" height="30" fill="#f8f9fa" />
+                        <rect x="170" y="230" width="20" height="30" fill="#f8f9fa" />
+                        <rect x="210" y="230" width="20" height="30" fill="#f8f9fa" />
+                        <rect x="170" y="280" width="20" height="30" fill="#f8f9fa" />
+                        <rect x="210" y="280" width="20" height="30" fill="#f8f9fa" />
+                        <rect x="170" y="330" width="20" height="30" fill="#f8f9fa" />
+                        <rect x="210" y="330" width="20" height="30" fill="#f8f9fa" />
+                        <rect x="270" y="180" width="150" height="220" fill="#228be6" />
+                        <rect x="290" y="210" width="25" height="35" fill="#f8f9fa" />
+                        <rect x="340" y="210" width="25" height="35" fill="#f8f9fa" />
+                        <rect x="390" y="210" width="25" height="35" fill="#f8f9fa" />
+                        <rect x="290" y="270" width="25" height="35" fill="#f8f9fa" />
+                        <rect x="340" y="270" width="25" height="35" fill="#f8f9fa" />
+                        <rect x="390" y="270" width="25" height="35" fill="#f8f9fa" />
+                        <rect x="290" y="330" width="25" height="35" fill="#f8f9fa" />
+                        <rect x="340" y="330" width="25" height="35" fill="#f8f9fa" />
+                        <rect x="390" y="330" width="25" height="35" fill="#f8f9fa" />
+                        <rect x="420" y="230" width="130" height="170" fill="#1971c2" />
+                        <rect x="440" y="260" width="25" height="35" fill="#f8f9fa" />
+                        <rect x="490" y="260" width="25" height="35" fill="#f8f9fa" />
+                        <rect x="440" y="320" width="25" height="35" fill="#f8f9fa" />
+                        <rect x="490" y="320" width="25" height="35" fill="#f8f9fa" />
+                        <line x1="0" y1="400" x2="600" y2="400" stroke="#343a40" stroke-width="2" />
+                        <circle cx="55" cy="150" r="30" fill="#ffd43b" />
+                        <path d="M80,150 C100,120 120,120 140,150" stroke="#212529" stroke-width="2" fill="none" />
+                    </svg>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Stats Section -->
+<div class="container mb-5">
+    <h2 class="text-center mb-4">Issues Overview</h2>
+    <div class="row g-4 text-center">
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="display-4 text-primary mb-2">
+                        <i class="fas fa-clipboard-list"></i>
+                    </div>
+                    <h5 class="card-title">Total Issues</h5>
+                    <p class="card-text display-6">{{ stats.total }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="display-4 text-danger mb-2">
+                        <i class="fas fa-exclamation-triangle"></i>
+                    </div>
+                    <h5 class="card-title">Not Resolved</h5>
+                    <p class="card-text display-6">{{ stats.not_resolved }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="display-4 text-warning mb-2">
+                        <i class="fas fa-tools"></i>
+                    </div>
+                    <h5 class="card-title">Ongoing</h5>
+                    <p class="card-text display-6">{{ stats.ongoing }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="display-4 text-success mb-2">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+                    <h5 class="card-title">Resolved</h5>
+                    <p class="card-text display-6">{{ stats.resolved }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- How It Works Section -->
+<div class="container mb-5">
+    <h2 class="text-center mb-4">How It Works</h2>
+    <div class="row g-4">
+        <div class="col-md-4">
+            <div class="card h-100 border-0 shadow-sm">
+                <div class="card-body text-center">
+                    <div class="feature-icon bg-primary bg-gradient text-white mb-3">
+                        <i class="fas fa-camera-retro fa-3x p-3"></i>
+                    </div>
+                    <h3 class="card-title">Report Issues</h3>
+                    <p class="card-text">
+                        Spot a pothole, broken street light, or garbage pile? Take a photo and report it through our platform.
+                    </p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card h-100 border-0 shadow-sm">
+                <div class="card-body text-center">
+                    <div class="feature-icon bg-primary bg-gradient text-white mb-3">
+                        <i class="fas fa-chart-line fa-3x p-3"></i>
+                    </div>
+                    <h3 class="card-title">Track Progress</h3>
+                    <p class="card-text">
+                        Monitor the status of reported issues. Know whether they're pending, being worked on, or resolved.
+                    </p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card h-100 border-0 shadow-sm">
+                <div class="card-body text-center">
+                    <div class="feature-icon bg-primary bg-gradient text-white mb-3">
+                        <i class="fas fa-star fa-3x p-3"></i>
+                    </div>
+                    <h3 class="card-title">Earn Rewards</h3>
+                    <p class="card-text">
+                        Active citizens earn stars for reporting issues. Showcase your contribution to making Bengaluru better!
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Issues -->
+{% if recent_issues %}
+<div class="container mb-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Recent Issues</h2>
+        <a href="{{ url_for('dashboard') }}" class="btn btn-outline-primary">
+            <i class="fas fa-list me-2"></i> View All Issues
+        </a>
+    </div>
+    
+    <div class="row g-4">
+        {% for issue in recent_issues %}
+        <div class="col-md-4">
+            <div class="card h-100 border-0 shadow-sm">
+                <div class="card-img-top">
+                    <img src="data:image/jpeg;base64,{{ issue.image }}" alt="{{ issue.title }}" class="img-fluid issue-thumbnail">
+                    <span class="badge bg-{{ get_status_color(issue.status) }} status-badge">
+                        {% if issue.status == 'not_resolved' %}
+                            Not Resolved
+                        {% elif issue.status == 'ongoing' %}
+                            Ongoing
+                        {% else %}
+                            Resolved
+                        {% endif %}
+                    </span>
+                </div>
+                <div class="card-body">
+                    <h5 class="card-title">{{ issue.title }}</h5>
+                    <p class="card-text text-muted">
+                        <i class="fas fa-map-marker-alt me-1"></i> {{ issue.location }}
+                    </p>
+                    <p class="card-text">{{ issue.description[:100] }}{% if issue.description|length > 100 %}...{% endif %}</p>
+                </div>
+                <div class="card-footer bg-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <small class="text-muted">
+                            <i class="fas fa-calendar-alt me-1"></i> {{ format_datetime(issue.timestamp) }}
+                        </small>
+                        <a href="{{ url_for('issue_details', issue_id=issue.id) }}" class="btn btn-sm btn-outline-primary">
+                            View Details
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
+<!-- Call to Action -->
+<div class="container mb-5">
+    <div class="p-5 text-center bg-primary text-white rounded-3">
+        <h2 class="mb-3">Join the Community of Active Citizens</h2>
+        <p class="lead mb-4">
+            Together, we can make Bengaluru a better place to live. Start reporting issues in your ward today!
+        </p>
+        {% if not current_user.is_authenticated %}
+        <a href="{{ url_for('signup') }}" class="btn btn-light btn-lg px-4 me-md-2">
+            <i class="fas fa-user-plus me-2"></i> Sign Up Now
+        </a>
+        {% else %}
+        <a href="{{ url_for('report_issue') }}" class="btn btn-light btn-lg px-4 me-md-2">
+            <i class="fas fa-exclamation-circle me-2"></i> Report an Issue
+        </a>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

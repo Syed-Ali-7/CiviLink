@@ -1,0 +1,212 @@
+{% extends 'base.html' %}
+
+{% block title %}Profile - BBMP Ward Issues Tracker{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- User Profile Card -->
+    <div class="col-md-4 mb-4">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body text-center">
+                <div class="user-avatar mb-3">
+                    <div class="avatar-circle bg-primary">
+                        {% if current_user.name %}
+                            {{ current_user.name[0].upper() }}
+                        {% else %}
+                            <i class="fas fa-user"></i>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <h3 class="card-title">
+                    {{ current_user.name or 'User' }}
+                    
+                    {% if current_user.stars > 0 %}
+                    <div class="mt-2">
+                        <span class="stars-display">
+                            {% for i in range(current_user.stars) %}
+                            <i class="fas fa-star text-warning"></i>
+                            {% endfor %}
+                        </span>
+                    </div>
+                    {% endif %}
+                </h3>
+                
+                <div class="text-muted mb-3">
+                    <i class="fas fa-phone me-2"></i> {{ current_user.phone }}
+                </div>
+                
+                {% if current_user.ward %}
+                <div class="text-muted mb-3">
+                    <i class="fas fa-map-marker-alt me-2"></i> {{ current_user.ward }} Ward
+                </div>
+                {% endif %}
+                
+                <div class="stats-container mt-4">
+                    <div class="row g-0">
+                        <div class="col-6 border-end">
+                            <div class="p-3">
+                                <h6 class="text-muted">Issues Reported</h6>
+                                <h2 class="mb-0">{{ current_user.issues_reported }}</h2>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="p-3">
+                                <h6 class="text-muted">Stars Earned</h6>
+                                <h2 class="mb-0">{{ current_user.stars }}</h2>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card-footer bg-white">
+                <button class="btn btn-primary w-100" data-bs-toggle="modal" data-bs-target="#editProfileModal">
+                    <i class="fas fa-edit me-2"></i> Edit Profile
+                </button>
+            </div>
+        </div>
+        
+        <!-- How Stars Work Card -->
+        <div class="card border-0 shadow-sm mt-4">
+            <div class="card-header bg-white">
+                <h5 class="mb-0"><i class="fas fa-star text-warning me-2"></i> How Stars Work</h5>
+            </div>
+            <div class="card-body">
+                <p class="card-text">Earn stars by reporting issues in your ward:</p>
+                <ul class="list-group list-group-flush">
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        1-4 issues reported
+                        <span class="badge bg-warning text-dark">★</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        5-9 issues reported
+                        <span class="badge bg-warning text-dark">★★</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        10-14 issues reported
+                        <span class="badge bg-warning text-dark">★★★</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        15-19 issues reported
+                        <span class="badge bg-warning text-dark">★★★★</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        20+ issues reported
+                        <span class="badge bg-warning text-dark">★★★★★</span>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    
+    <!-- User Issues -->
+    <div class="col-md-8">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="fas fa-clipboard-list me-2"></i> My Reported Issues</h5>
+                <a href="{{ url_for('report_issue') }}" class="btn btn-sm btn-primary">
+                    <i class="fas fa-plus me-1"></i> Report New Issue
+                </a>
+            </div>
+            
+            <div class="card-body">
+                {% if issues %}
+                <div class="list-group">
+                    {% for issue in issues %}
+                    <a href="{{ url_for('issue_details', issue_id=issue.id) }}" class="list-group-item list-group-item-action">
+                        <div class="d-flex w-100 justify-content-between align-items-center">
+                            <h5 class="mb-1">{{ issue.title }}</h5>
+                            <span class="badge bg-{{ get_status_color(issue.status) }}">
+                                {% if issue.status == 'not_resolved' %}
+                                    Not Resolved
+                                {% elif issue.status == 'ongoing' %}
+                                    Ongoing
+                                {% else %}
+                                    Resolved
+                                {% endif %}
+                            </span>
+                        </div>
+                        <p class="mb-1 text-muted">
+                            <span class="badge bg-secondary me-2">{{ issue.category }}</span>
+                            <i class="fas fa-map-marker-alt me-1"></i> {{ issue.location }}
+                        </p>
+                        <small class="text-muted">
+                            <i class="fas fa-calendar-alt me-1"></i> {{ issue.formatted_time }}
+                        </small>
+                    </a>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="text-center py-5">
+                    <div class="display-4 text-muted mb-3">
+                        <i class="fas fa-clipboard-list"></i>
+                    </div>
+                    <h5 class="text-muted">You haven't reported any issues yet</h5>
+                    <p>Start by reporting an issue in your ward</p>
+                    <a href="{{ url_for('report_issue') }}" class="btn btn-primary mt-3">
+                        <i class="fas fa-plus me-2"></i> Report New Issue
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Profile Modal -->
+<div class="modal fade" id="editProfileModal" tabindex="-1" aria-labelledby="editProfileModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editProfileModalLabel">Edit Profile</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form method="post" action="{{ url_for('profile') }}">
+                    <div class="mb-3">
+                        <label for="name" class="form-label">Full Name</label>
+                        <input type="text" class="form-control" id="name" name="name" 
+                               value="{{ current_user.name }}" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="phone" class="form-label">Phone Number</label>
+                        <input type="tel" class="form-control" id="phone" value="{{ current_user.phone }}" disabled>
+                        <div class="form-text">Phone number cannot be changed.</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="ward" class="form-label">BBMP Ward</label>
+                        <select class="form-select" id="ward" name="ward" required>
+                            <option value="" disabled>Select your ward</option>
+                            <option value="Yelahanka" {% if current_user.ward == 'Yelahanka' %}selected{% endif %}>Yelahanka</option>
+                            <option value="Byatarayanapura" {% if current_user.ward == 'Byatarayanapura' %}selected{% endif %}>Byatarayanapura</option>
+                            <option value="Kodigehalli" {% if current_user.ward == 'Kodigehalli' %}selected{% endif %}>Kodigehalli</option>
+                            <option value="Vidyaranyapura" {% if current_user.ward == 'Vidyaranyapura' %}selected{% endif %}>Vidyaranyapura</option>
+                            <option value="Dodda Bommasandra" {% if current_user.ward == 'Dodda Bommasandra' %}selected{% endif %}>Dodda Bommasandra</option>
+                            <option value="Kuvempu Nagar" {% if current_user.ward == 'Kuvempu Nagar' %}selected{% endif %}>Kuvempu Nagar</option>
+                            <option value="Shettihalli" {% if current_user.ward == 'Shettihalli' %}selected{% endif %}>Shettihalli</option>
+                            <option value="Mallasandra" {% if current_user.ward == 'Mallasandra' %}selected{% endif %}>Mallasandra</option>
+                            <option value="Bagalakunte" {% if current_user.ward == 'Bagalakunte' %}selected{% endif %}>Bagalakunte</option>
+                            <option value="T Dasarahalli" {% if current_user.ward == 'T Dasarahalli' %}selected{% endif %}>T Dasarahalli</option>
+                            <option value="Jalahalli" {% if current_user.ward == 'Jalahalli' %}selected{% endif %}>Jalahalli</option>
+                            <option value="JP Park" {% if current_user.ward == 'JP Park' %}selected{% endif %}>JP Park</option>
+                            <option value="Yeshwanthpura" {% if current_user.ward == 'Yeshwanthpura' %}selected{% endif %}>Yeshwanthpura</option>
+                            <option value="HMT Ward" {% if current_user.ward == 'HMT Ward' %}selected{% endif %}>HMT Ward</option>
+                            <option value="Chokkasandra" {% if current_user.ward == 'Chokkasandra' %}selected{% endif %}>Chokkasandra</option>
+                            <!-- Add more wards as needed -->
+                        </select>
+                    </div>
+                    
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save me-2"></i> Save Changes
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

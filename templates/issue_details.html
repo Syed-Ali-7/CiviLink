@@ -1,0 +1,245 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ issue.title }} - BBMP Ward Issues Tracker{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8">
+        <!-- Issue Details Card -->
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-body p-4">
+                <div class="d-flex justify-content-between align-items-start mb-3">
+                    <h2 class="card-title">{{ issue.title }}</h2>
+                    <span class="badge bg-{{ get_status_color(issue.status) }} fs-6">
+                        {% if issue.status == 'not_resolved' %}
+                            Not Resolved
+                        {% elif issue.status == 'ongoing' %}
+                            Ongoing
+                        {% else %}
+                            Resolved
+                        {% endif %}
+                    </span>
+                </div>
+                
+                <div class="issue-meta mb-4">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p class="text-muted mb-2">
+                                <i class="fas fa-calendar-alt me-2"></i> Reported on: {{ issue.formatted_time }}
+                            </p>
+                            <p class="text-muted mb-2">
+                                <i class="fas fa-user me-2"></i> Reported by: {{ issue.user_name }}
+                            </p>
+                        </div>
+                        <div class="col-md-6">
+                            <p class="text-muted mb-2">
+                                <i class="fas fa-tag me-2"></i> Category: 
+                                <span class="badge bg-secondary">{{ issue.category }}</span>
+                            </p>
+                            <p class="text-muted mb-2">
+                                <i class="fas fa-map-marker-alt me-2"></i> Location: {{ issue.location }}, {{ issue.ward }} Ward
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="issue-image mb-4">
+                    <img src="data:image/jpeg;base64,{{ issue.image }}" class="img-fluid rounded" alt="{{ issue.title }}">
+                </div>
+                
+                <div class="issue-description">
+                    <h5>Description</h5>
+                    <p>{{ issue.description }}</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Status Update Form (for demo purposes, in a real app would be admin-only) -->
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-white">
+                <h5 class="mb-0">Update Status</h5>
+            </div>
+            <div class="card-body">
+                <form method="post" action="{{ url_for('issue_details', issue_id=issue.id) }}">
+                    <input type="hidden" name="action" value="update_status">
+                    
+                    <div class="d-flex gap-2">
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="status" id="statusNotResolved" 
+                                   value="not_resolved" {% if issue.status == 'not_resolved' %}checked{% endif %}>
+                            <label class="form-check-label" for="statusNotResolved">
+                                Not Resolved
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="status" id="statusOngoing" 
+                                   value="ongoing" {% if issue.status == 'ongoing' %}checked{% endif %}>
+                            <label class="form-check-label" for="statusOngoing">
+                                Ongoing
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="status" id="statusResolved" 
+                                   value="resolved" {% if issue.status == 'resolved' %}checked{% endif %}>
+                            <label class="form-check-label" for="statusResolved">
+                                Resolved
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary mt-3">
+                        <i class="fas fa-sync-alt me-2"></i> Update Status
+                    </button>
+                </form>
+            </div>
+        </div>
+        
+        <!-- Reviews Section (only for resolved issues) -->
+        {% if issue.status == 'resolved' %}
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-white">
+                <h5 class="mb-0">Citizen Reviews</h5>
+            </div>
+            <div class="card-body">
+                <!-- Review Form -->
+                <form method="post" action="{{ url_for('issue_details', issue_id=issue.id) }}" class="mb-4">
+                    <input type="hidden" name="action" value="add_review">
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Rate the resolution of this issue</label>
+                        <div class="rating-input">
+                            <div class="form-check form-check-inline">
+                                <input class="form-check-input" type="radio" name="rating" id="rating1" value="1">
+                                <label class="form-check-label" for="rating1">1 <i class="fas fa-star text-warning"></i></label>
+                            </div>
+                            <div class="form-check form-check-inline">
+                                <input class="form-check-input" type="radio" name="rating" id="rating2" value="2">
+                                <label class="form-check-label" for="rating2">2 <i class="fas fa-star text-warning"></i></label>
+                            </div>
+                            <div class="form-check form-check-inline">
+                                <input class="form-check-input" type="radio" name="rating" id="rating3" value="3" checked>
+                                <label class="form-check-label" for="rating3">3 <i class="fas fa-star text-warning"></i></label>
+                            </div>
+                            <div class="form-check form-check-inline">
+                                <input class="form-check-input" type="radio" name="rating" id="rating4" value="4">
+                                <label class="form-check-label" for="rating4">4 <i class="fas fa-star text-warning"></i></label>
+                            </div>
+                            <div class="form-check form-check-inline">
+                                <input class="form-check-input" type="radio" name="rating" id="rating5" value="5">
+                                <label class="form-check-label" for="rating5">5 <i class="fas fa-star text-warning"></i></label>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="comment" class="form-label">Comment (optional)</label>
+                        <textarea class="form-control" id="comment" name="comment" rows="3" 
+                                  placeholder="Share your thoughts about the resolution"></textarea>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-paper-plane me-2"></i> Submit Review
+                    </button>
+                </form>
+                
+                <!-- Existing Reviews -->
+                {% if issue.reviews %}
+                <h6 class="mt-4 mb-3">{{ issue.reviews|length }} Review{% if issue.reviews|length != 1 %}s{% endif %}</h6>
+                <div class="list-group">
+                    {% for review in issue.reviews %}
+                    <div class="list-group-item">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h6 class="mb-1">{{ review.user_name }}</h6>
+                            <small class="text-muted">{{ review.formatted_time }}</small>
+                        </div>
+                        <div class="mb-2">
+                            {% for i in range(review.rating) %}
+                            <i class="fas fa-star text-warning"></i>
+                            {% endfor %}
+                            {% for i in range(5 - review.rating) %}
+                            <i class="far fa-star text-warning"></i>
+                            {% endfor %}
+                        </div>
+                        {% if review.comment %}
+                        <p class="mb-1">{{ review.comment }}</p>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="text-center py-3 mt-3 bg-light rounded">
+                    <p class="text-muted mb-0">No reviews yet. Be the first to review!</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+    
+    <div class="col-md-4">
+        <!-- Similar Issues Card -->
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-white">
+                <h5 class="mb-0">Timeline</h5>
+            </div>
+            <div class="card-body">
+                <ul class="timeline">
+                    <li class="timeline-item">
+                        <div class="timeline-marker bg-primary"></div>
+                        <div class="timeline-content">
+                            <h6 class="timeline-title">Issue Reported</h6>
+                            <p class="timeline-date">{{ issue.formatted_time }}</p>
+                        </div>
+                    </li>
+                    
+                    {% if issue.status_updated %}
+                    <li class="timeline-item">
+                        <div class="timeline-marker {% if issue.status == 'ongoing' %}bg-warning{% elif issue.status == 'resolved' %}bg-success{% else %}bg-danger{% endif %}"></div>
+                        <div class="timeline-content">
+                            <h6 class="timeline-title">
+                                Status Updated to 
+                                {% if issue.status == 'not_resolved' %}
+                                Not Resolved
+                                {% elif issue.status == 'ongoing' %}
+                                Ongoing
+                                {% else %}
+                                Resolved
+                                {% endif %}
+                            </h6>
+                            <p class="timeline-date">{{ format_datetime(issue.status_updated) }}</p>
+                        </div>
+                    </li>
+                    {% endif %}
+                    
+                    {% if issue.reviews %}
+                    <li class="timeline-item">
+                        <div class="timeline-marker bg-info"></div>
+                        <div class="timeline-content">
+                            <h6 class="timeline-title">First Review Added</h6>
+                            <p class="timeline-date">{{ format_datetime(issue.reviews[0].timestamp) }}</p>
+                        </div>
+                    </li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+        
+        <!-- Actions Card -->
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-white">
+                <h5 class="mb-0">Actions</h5>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <a href="{{ url_for('dashboard') }}" class="btn btn-outline-primary">
+                        <i class="fas fa-arrow-left me-2"></i> Back to Dashboard
+                    </a>
+                    <a href="{{ url_for('report_issue') }}" class="btn btn-primary">
+                        <i class="fas fa-plus me-2"></i> Report Another Issue
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
