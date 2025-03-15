@@ -48,3 +48,6 @@ def init_db():
         )
         ''')
         conn.commit()
+
+# Initialize DB on module import
+init_db()
